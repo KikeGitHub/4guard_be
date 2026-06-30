@@ -50,10 +50,6 @@ public class JwtService {
         return buildToken(new HashMap<>(), user.getUsername(), jwtProperties.getRefreshTokenExpiration());
     }
 
-    public String generateResetPasswordToken(String email) {
-        return buildToken(new HashMap<>(), email, jwtProperties.getPasswordResetTokenExpiration());
-    }
-
     public boolean isTokenValid(String token, String expectedUsername) {
         final String username = extractUsername(token);
         return (username.equals(expectedUsername)) && !isTokenExpired(token);
