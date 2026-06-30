@@ -35,6 +35,7 @@ public interface UserMapper {
     @Mapping(target = "organization", ignore = true) // Resolved in service
     @Mapping(target = "branch", ignore = true)       // Resolved in service
     @Mapping(target = "role", ignore = true)         // Resolved in service
+    @Mapping(target = "changePasswordRequired", ignore = true)
     @Mapping(target = "lastLogin", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -47,6 +48,7 @@ public interface UserMapper {
     @Mapping(target = "organization", ignore = true) // Resolved in service
     @Mapping(target = "branch", ignore = true)       // Resolved in service
     @Mapping(target = "role", ignore = true)         // Resolved in service
+    @Mapping(target = "changePasswordRequired", ignore = true)
     @Mapping(target = "lastLogin", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

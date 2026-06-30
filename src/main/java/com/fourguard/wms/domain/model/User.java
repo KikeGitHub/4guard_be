@@ -23,6 +23,7 @@ public class User {
     private Role role;
     private UserStatus status;
     private Boolean isEnabled;
+    private Boolean changePasswordRequired;
     private OffsetDateTime lastLogin;
     private Long version;
     private OffsetDateTime createdAt;
