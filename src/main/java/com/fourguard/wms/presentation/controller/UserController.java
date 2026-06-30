@@ -36,7 +36,7 @@ public class UserController {
     private final DeleteUserUseCase deleteUserUseCase;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('SYS_ADMIN')")
+    @PreAuthorize("hasAuthority('USERS_CREATE')")
     @Operation(summary = "Crear usuario", description = "Crea un nuevo usuario en el sistema. Requiere permisos de administrador.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Usuario creado con éxito"),
@@ -50,7 +50,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'WMS_READ')")
+    @PreAuthorize("hasAuthority('USERS_READ')")
     @Operation(summary = "Obtener todos los usuarios", description = "Recupera la lista de todos los usuarios registrados.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lista de usuarios recuperada con éxito"),
@@ -63,7 +63,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'WMS_READ')")
+    @PreAuthorize("hasAuthority('USERS_READ')")
     @Operation(summary = "Obtener usuario por ID", description = "Recupera los detalles de un usuario específico a partir de su UUID.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Usuario encontrado con éxito"),
@@ -77,7 +77,7 @@ public class UserController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('SYS_ADMIN')")
+    @PreAuthorize("hasAuthority('USERS_UPDATE')")
     @Operation(summary = "Actualizar usuario", description = "Actualiza los datos de un usuario existente. Requiere permisos de administrador.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Usuario actualizado con éxito"),
@@ -92,7 +92,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('SYS_ADMIN')")
+    @PreAuthorize("hasAuthority('USERS_DELETE')")
     @Operation(summary = "Eliminar usuario", description = "Elimina físicamente a un usuario del sistema por su ID. Requiere permisos de administrador.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Usuario eliminado con éxito"),
