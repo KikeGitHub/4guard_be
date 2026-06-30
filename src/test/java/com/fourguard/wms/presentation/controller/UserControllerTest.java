@@ -10,6 +10,7 @@ import com.fourguard.wms.domain.ports.in.DeleteUserUseCase;
 import com.fourguard.wms.domain.ports.in.GetUserUseCase;
 import com.fourguard.wms.domain.ports.in.UpdateUserUseCase;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
+import com.fourguard.wms.application.dto.request.auth.ChangePasswordRequest;
 import com.fourguard.wms.presentation.advice.GlobalExceptionHandler;
 import com.fourguard.wms.presentation.advice.DomainExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,8 @@ class UserControllerTest {
     @Mock private GetUserUseCase getUserUseCase;
     @Mock private UpdateUserUseCase updateUserUseCase;
     @Mock private DeleteUserUseCase deleteUserUseCase;
+    @Mock private com.fourguard.wms.domain.ports.in.ResetUserPasswordUseCase resetUserPasswordUseCase;
+    @Mock private com.fourguard.wms.domain.ports.in.ChangeTemporaryPasswordUseCase changeTemporaryPasswordUseCase;
 
     @InjectMocks
     private UserController userController;
@@ -180,7 +183,7 @@ class UserControllerTest {
     }
 
     @Test
-    void whenDeleteUser_thenReturn200() throws Exception {
+    public void whenDeleteUser_thenReturn200() throws Exception {
         // Arrange
         doNothing().when(deleteUserUseCase).deleteUser(userId);
 
@@ -189,5 +192,54 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Usuario eliminado con éxito"));
+    }
+
+    @Test
+    void whenResetToTemp_thenReturn200() throws Exception {
+        // Arrange
+        when(resetUserPasswordUseCase.resetToTemporaryPassword(userId, "admin")).thenReturn("4G-temp123*");
+
+        // Act & Assert
+        mockMvc.perform(put("/users/{id}/reset-password-temp", userId)
+                        .principal(() -> "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Contraseña temporal generada con éxito"))
+                .andExpect(jsonPath("$.data").value("4G-temp123*"));
+    }
+
+    @Test
+    void whenChangePassword_thenReturn200() throws Exception {
+        // Arrange
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .newPassword("newSecurePass123")
+                .build();
+        doNothing().when(changeTemporaryPasswordUseCase).changePassword("operator", "newSecurePass123");
+
+        // Act & Assert
+        mockMvc.perform(put("/users/change-password")
+                        .principal(() -> "operator")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Contraseña actualizada con éxito"));
+    }
+
+    @Test
+    void whenChangePassword_withInvalidData_thenReturn400() throws Exception {
+        // Arrange
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .newPassword("short") // Invalid password (short)
+                .build();
+
+        // Act & Assert
+        mockMvc.perform(put("/users/change-password")
+                        .principal(() -> "operator")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Error de validación en los datos de entrada"));
     }
 }
