@@ -245,3 +245,5 @@ VALUES (
     'ACTIVE',
     TRUE
 ) ON CONFLICT (username) DO NOTHING;
+
+
