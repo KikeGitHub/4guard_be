@@ -147,19 +147,31 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
 
     private Organization findOrganizationById(UUID id) {
         return organizationRepositoryPort.findById(id)
-                .map(orgEntity -> Organization.builder().id(orgEntity.getId()).name(orgEntity.getName()).build()) // Map to domain model
+                .map(orgEntity -> Organization.builder()
+                        .id(orgEntity.getId())
+                        .name(orgEntity.getName())
+                        .version(orgEntity.getVersion())
+                        .build()) // Map to domain model
                 .orElseThrow(() -> new EntityNotFoundException("Organization not found with ID: " + id));
     }
 
     private Branch findBranchById(UUID id) {
         return branchRepositoryPort.findById(id)
-                .map(branchEntity -> Branch.builder().id(branchEntity.getId()).name(branchEntity.getName()).build()) // Map to domain model
+                .map(branchEntity -> Branch.builder()
+                        .id(branchEntity.getId())
+                        .name(branchEntity.getName())
+                        .version(branchEntity.getVersion())
+                        .build()) // Map to domain model
                 .orElseThrow(() -> new EntityNotFoundException("Branch not found with ID: " + id));
     }
 
     private Role findRoleById(UUID id) {
         return roleRepositoryPort.findById(id)
-                .map(roleEntity -> Role.builder().id(roleEntity.getId()).name(roleEntity.getName()).build()) // Map to domain model
+                .map(roleEntity -> Role.builder()
+                        .id(roleEntity.getId())
+                        .name(roleEntity.getName())
+                        .version(roleEntity.getVersion())
+                        .build()) // Map to domain model
                 .orElseThrow(() -> new EntityNotFoundException("Role not found with ID: " + id));
     }
 
