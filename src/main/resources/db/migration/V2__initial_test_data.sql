@@ -246,4 +246,36 @@ VALUES (
     TRUE
 ) ON CONFLICT (username) DO NOTHING;
 
+-- Test Users: Chris4G and Romel4G
+INSERT INTO wms.users (id, username, email, password, first_name, last_name, organization_id, branch_id, role_id, status, is_enabled)
+VALUES (
+    'afe4de7c-d10e-44b9-8970-46a0fda50626',
+    'Chris4G',
+    'christian@4guard.mx',
+    '$2a$12$clSxIMQpelhyCewjyiKAt.iyyBgViyojwf.fIzaHGfrjFy26duUFG',
+    'Christian',
+    'Duran Garcia',
+    'a53f0907-9fa5-4bdf-87db-2eb5e7683935',
+    'b73f0907-9fa5-4bdf-87db-2eb5e7683936',
+    '88888888-8888-8888-8888-888888888888',
+    'ACTIVE',
+    TRUE
+) ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO wms.users (id, username, email, password, first_name, last_name, organization_id, branch_id, role_id, status, is_enabled)
+VALUES (
+    'fb31fe4c-bc27-4b1c-8846-7288812f84bf',
+    'Romel4G',
+    'romel@4guard.mx',
+    '$2a$12$R8b0a8RAUEV5MLOsAMYFGO9ztDab5sXaTSGyJfY68SQxJTEDXzuqC',
+    'Romel',
+    'Salgado',
+    'a53f0907-9fa5-4bdf-87db-2eb5e7683935',
+    'b73f0907-9fa5-4bdf-87db-2eb5e7683936',
+    '88888888-8888-8888-8888-888888888888',
+    'ACTIVE',
+    TRUE
+) ON CONFLICT (username) DO NOTHING;
+
+
 
