@@ -28,6 +28,9 @@ class ChangeTemporaryPasswordUseCaseImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private com.fourguard.wms.shared.audit.AuditService auditService;
+
     @InjectMocks
     private ChangeTemporaryPasswordUseCaseImpl changeTemporaryPasswordUseCase;
 

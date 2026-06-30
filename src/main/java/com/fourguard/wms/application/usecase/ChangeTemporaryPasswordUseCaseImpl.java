@@ -19,6 +19,7 @@ public class ChangeTemporaryPasswordUseCaseImpl implements ChangeTemporaryPasswo
 
     private final UserRepositoryPort userRepositoryPort;
     private final PasswordEncoder passwordEncoder;
+    private final com.fourguard.wms.shared.audit.AuditService auditService;
 
     @Override
     @Transactional
@@ -34,6 +35,8 @@ public class ChangeTemporaryPasswordUseCaseImpl implements ChangeTemporaryPasswo
         userEntity.setUpdatedBy(username);
 
         userRepositoryPort.save(userEntity);
+
+        auditService.log(userEntity, "CHANGE_PASSWORD", "USER", userEntity.getId(), null, java.util.Map.of("username", username));
 
         log.info("[AUDIT] Temporary password successfully changed to permanent for user: {}", username);
     }

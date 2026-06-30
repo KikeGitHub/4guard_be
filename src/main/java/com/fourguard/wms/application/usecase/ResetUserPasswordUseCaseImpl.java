@@ -20,6 +20,7 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
     private final PasswordEncoder passwordEncoder;
+    private final com.fourguard.wms.shared.audit.AuditService auditService;
 
     @Override
     @Transactional
@@ -28,6 +29,9 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
 
         UserEntity userEntity = userRepositoryPort.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+
+        UserEntity adminEntity = userRepositoryPort.findByUsername(adminUsername)
+                .orElseThrow(() -> new EntityNotFoundException("Admin not found with username: " + adminUsername));
 
         // Generate temporary password with complexity: 4G-<8 chars hex>-*
         String tempPassword = "4G-" + UUID.randomUUID().toString().substring(0, 8) + "*";
@@ -38,6 +42,8 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
         userEntity.setUpdatedBy(adminUsername);
 
         userRepositoryPort.save(userEntity);
+
+        auditService.log(adminEntity, "PASSWORD_RESET_TEMP", "USER", userId, null, java.util.Map.of("targetUsername", userEntity.getUsername(), "initiatedBy", adminUsername));
 
         log.info("[AUDIT] Temporary password generated successfully for user ID: {}", userId);
         return tempPassword;

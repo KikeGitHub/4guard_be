@@ -29,10 +29,14 @@ class ResetUserPasswordUseCaseImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private com.fourguard.wms.shared.audit.AuditService auditService;
+
     @InjectMocks
     private ResetUserPasswordUseCaseImpl resetUserPasswordUseCase;
 
     private UserEntity userEntity;
+    private UserEntity adminUserEntity;
     private UUID userId;
 
     @BeforeEach
@@ -45,12 +49,18 @@ class ResetUserPasswordUseCaseImplTest {
                 .password("oldHashedPassword")
                 .changePasswordRequired(false)
                 .build();
+        adminUserEntity = UserEntity.builder()
+                .id(UUID.randomUUID())
+                .username("adminUser")
+                .email("admin@4guard.mx")
+                .build();
     }
 
     @Test
     void whenResetToTemporaryPassword_thenSuccess() {
         // Arrange
         when(userRepositoryPort.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(userRepositoryPort.findByUsername("adminUser")).thenReturn(Optional.of(adminUserEntity));
         when(passwordEncoder.encode(anyString())).thenReturn("newHashedPassword");
 
         // Act

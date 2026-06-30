@@ -34,6 +34,7 @@ class LoginUseCaseImplTest {
     @Mock private JwtService jwtService;
     @Mock private JwtProperties jwtProperties;
     @Mock private UserMapper userMapper;
+    @Mock private com.fourguard.wms.shared.audit.AuditService auditService;
 
     @InjectMocks
     private LoginUseCaseImpl loginUseCase;
