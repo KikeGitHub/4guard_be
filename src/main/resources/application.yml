@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: 4guard-wms-be
+  profiles:
+    active: dev
+
+  # ── Redis auto-config excluded globally; managed manually via RedisConfig ──
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+
+  # ── JSON serialization ─────────────────────────────────────────────────────
+  jackson:
+    time-zone: UTC
+    default-property-inclusion: NON_NULL
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/4guard_db
+    username: postgres
+    password: admin
+
+# ── Server ──────────────────────────────────────────────────────────────────
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+
+# ── SpringDoc / Swagger UI ───────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+    try-it-out-enabled: true
+  default-produces-media-type: application/json
+  show-actuator: false
+
+# ── Cache (Redis desacoplado) ─────────────────────────────────────────────────
+# Para activar Redis: cache.redis.enabled=true + spring.data.redis.*
+cache:
+  redis:
+    enabled: false
+
+# ── Actuator ─────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ── Logging global ────────────────────────────────────────────────────────────
+logging:
+  level:
+    root: INFO
+    com.fourguard.wms: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
