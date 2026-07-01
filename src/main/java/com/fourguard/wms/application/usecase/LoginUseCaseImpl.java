@@ -30,6 +30,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
     private final UserMapper userMapper;
+    private final com.fourguard.wms.shared.audit.AuditService auditService;
 
     @Override
     @Transactional
@@ -67,6 +68,8 @@ public class LoginUseCaseImpl implements LoginUseCase {
         UserInfoResponse userInfo = userMapper.toUserInfoResponse(user);
 
         log.info("[AUTH] Successful login for: {}", user.getUsername());
+        
+        auditService.log(user, "LOGIN", "USER", user.getId(), null, java.util.Map.of("username", user.getUsername(), "email", user.getEmail()));
 
         return AuthResponse.builder()
                 .accessToken(accessToken)

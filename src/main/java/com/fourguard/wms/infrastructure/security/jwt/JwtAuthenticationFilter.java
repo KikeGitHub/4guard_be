@@ -49,6 +49,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         // Get the path without the context path, as Spring Security's requestMatchers also operate on this path
         String path = request.getRequestURI().substring(request.getContextPath().length());
+        if ("/auth/logout".equals(path)) {
+            return false;
+        }
         return EXCLUDED_PATHS.stream().anyMatch(pattern -> antPathMatcher.match(pattern, path));
     }
 
