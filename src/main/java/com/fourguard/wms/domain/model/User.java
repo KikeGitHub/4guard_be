@@ -25,6 +25,15 @@ public class User {
     private Boolean isEnabled;
     private Boolean changePasswordRequired;
     private OffsetDateTime lastLogin;
+
+    // ── Login lockout ──────────────────────────────────────────────────────────
+    /** Number of consecutive failed login attempts in the current window. */
+    private Integer failedAttempts;
+    /** Timestamp until which the account is temporarily locked. NULL = not locked. */
+    private OffsetDateTime lockedUntil;
+    /** When TRUE the account is permanently locked; requires admin intervention. */
+    private Boolean permanentlyLocked;
+
     private Long version;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;

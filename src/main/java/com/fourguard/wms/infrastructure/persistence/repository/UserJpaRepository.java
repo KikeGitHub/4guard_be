@@ -3,6 +3,7 @@ package com.fourguard.wms.infrastructure.persistence.repository;
 import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -25,4 +26,15 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
     boolean existsByEmail(String email);
 
     List<UserEntity> findByOrganizationId(UUID organizationId);
+
+    /**
+     * Finds the primary administrator of a given organisation.
+     * The admin is the enabled user whose role has the lowest level (level = 1),
+     * ordered by account creation date to get a deterministic result.
+     */
+    @Query("SELECT u FROM UserEntity u JOIN u.role r " +
+           "WHERE u.organization.id = :orgId AND r.level = 1 AND u.isEnabled = true " +
+           "ORDER BY u.createdAt ASC")
+    Optional<UserEntity> findTopAdminByOrganizationId(@Param("orgId") UUID orgId);
 }
+

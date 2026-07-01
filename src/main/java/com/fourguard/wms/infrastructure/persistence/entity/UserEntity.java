@@ -68,4 +68,17 @@ public class UserEntity extends BaseVersionedEntity {
 
     @Column(name = "last_login")
     private OffsetDateTime lastLogin;
+
+    // ── Login lockout ──────────────────────────────────────────────────────────
+
+    @Column(name = "failed_attempts", nullable = false)
+    @Builder.Default
+    private Integer failedAttempts = 0;
+
+    @Column(name = "locked_until")
+    private OffsetDateTime lockedUntil;
+
+    @Column(name = "permanently_locked", nullable = false)
+    @Builder.Default
+    private Boolean permanentlyLocked = false;
 }

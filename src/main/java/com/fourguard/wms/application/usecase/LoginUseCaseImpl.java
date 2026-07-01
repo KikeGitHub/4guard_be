@@ -31,45 +31,56 @@ public class LoginUseCaseImpl implements LoginUseCase {
     private final JwtProperties jwtProperties;
     private final UserMapper userMapper;
     private final com.fourguard.wms.shared.audit.AuditService auditService;
+    private final LoginLockService loginLockService;
 
     @Override
     @Transactional
     public AuthResponse login(LoginRequest request) {
         log.info("[AUTH] Attempting login for: {}", request.getIdentifier());
 
-        // Find user by username or email
+        // 1. Find user by username or email
         UserEntity user = userRepositoryPort.findByUsernameOrEmail(request.getIdentifier())
                 .orElseThrow(() -> new InvalidCredentialsException("Credenciales incorrectas"));
 
-        // Validate password
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("[AUTH] Password mismatch for user: {}", user.getUsername());
-            throw new InvalidCredentialsException("Credenciales incorrectas");
-        }
+        // 2. Check lockout status BEFORE password validation
+        //    Throws AccountTemporarilyLockedException or AccountPermanentlyLockedException if locked.
+        loginLockService.checkLockStatus(user);
 
-        // Check if account is active/enabled
+        // 3. Check if account is active/enabled
         if (!user.getIsEnabled() || !"ACTIVE".equals(user.getStatus().name())) {
             log.warn("[AUTH] Account disabled or pending: {}", user.getUsername());
             throw new InvalidCredentialsException("La cuenta está desactivada o pendiente de activación");
         }
 
-        // Update last login
+        // 4. Validate password — register failure if wrong
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            log.warn("[AUTH] Password mismatch for user: {}", user.getUsername());
+            loginLockService.registerFailedAttempt(user);
+            throw new InvalidCredentialsException("Credenciales incorrectas");
+        }
+
+        // 5. Login successful — reset failure counter
+        loginLockService.resetOnSuccess(user);
+
+        // 6. Update last login
         user.setLastLogin(OffsetDateTime.now(ZoneOffset.UTC));
         userRepositoryPort.save(user);
 
-        // Generate tokens
-        String accessToken = jwtService.generateAccessToken(user);
+        // 7. Generate tokens
+        String accessToken  = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        // Expiration timestamp
-        LocalDateTime expiresAt = LocalDateTime.now().plusNanos(jwtProperties.getAccessTokenExpiration() * 1_000_000L);
+        // 8. Expiration timestamp
+        LocalDateTime expiresAt = LocalDateTime.now()
+                .plusNanos(jwtProperties.getAccessTokenExpiration() * 1_000_000L);
 
-        // Map user details to DTO
+        // 9. Map user details to DTO
         UserInfoResponse userInfo = userMapper.toUserInfoResponse(user);
 
         log.info("[AUTH] Successful login for: {}", user.getUsername());
-        
-        auditService.log(user, "LOGIN", "USER", user.getId(), null, java.util.Map.of("username", user.getUsername(), "email", user.getEmail()));
+
+        auditService.log(user, "LOGIN", "USER", user.getId(), null,
+                java.util.Map.of("username", user.getUsername(), "email", user.getEmail()));
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
