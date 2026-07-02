@@ -28,7 +28,6 @@ public class ApplicationConfig {
      * <p>Shared bean used by:
      * <ul>
      *   <li>{@code LoginUseCaseImpl} — to verify passwords</li>
-     *   <li>{@code ResetPasswordUseCaseImpl} — to hash the new password</li>
      *   <li>The V2 seed data script (hash generated offline with this encoder)</li>
      * </ul>
      */

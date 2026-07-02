@@ -11,12 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ResetPasswordRequest {
-
-    @NotBlank(message = "El token de restablecimiento es requerido")
-    private String token;
+public class ChangePasswordRequest {
 
     @NotBlank(message = "La nueva contraseña es requerida")
-    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres de longitud")
     private String newPassword;
 }

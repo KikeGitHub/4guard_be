@@ -36,9 +36,4 @@ public class JwtProperties {
      * Refresh token validity in milliseconds. Default: 604800000 (7 days).
      */
     private long refreshTokenExpiration = 604_800_000L;
-
-    /**
-     * Password-reset token validity in milliseconds. Default: 900000 (15 minutes).
-     */
-    private long passwordResetTokenExpiration = 900_000L;
 }

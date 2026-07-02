@@ -35,7 +35,11 @@ public interface UserMapper {
     @Mapping(target = "organization", ignore = true) // Resolved in service
     @Mapping(target = "branch", ignore = true)       // Resolved in service
     @Mapping(target = "role", ignore = true)         // Resolved in service
+    @Mapping(target = "changePasswordRequired", ignore = true)
     @Mapping(target = "lastLogin", ignore = true)
+    @Mapping(target = "failedAttempts", ignore = true)
+    @Mapping(target = "lockedUntil", ignore = true)
+    @Mapping(target = "permanentlyLocked", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -47,7 +51,11 @@ public interface UserMapper {
     @Mapping(target = "organization", ignore = true) // Resolved in service
     @Mapping(target = "branch", ignore = true)       // Resolved in service
     @Mapping(target = "role", ignore = true)         // Resolved in service
+    @Mapping(target = "changePasswordRequired", ignore = true)
     @Mapping(target = "lastLogin", ignore = true)
+    @Mapping(target = "failedAttempts", ignore = true)
+    @Mapping(target = "lockedUntil", ignore = true)
+    @Mapping(target = "permanentlyLocked", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -138,18 +146,30 @@ public interface UserMapper {
     @Named("mapOrganizationToOrganizationEntity")
     default OrganizationEntity mapOrganizationToOrganizationEntity(Organization organization) {
         if (organization == null || organization.getId() == null) return null;
-        return OrganizationEntity.builder().id(organization.getId()).name(organization.getName()).build();
+        return OrganizationEntity.builder()
+                .id(organization.getId())
+                .name(organization.getName())
+                .version(organization.getVersion())
+                .build();
     }
 
     @Named("mapBranchToBranchEntity")
     default BranchEntity mapBranchToBranchEntity(Branch branch) {
         if (branch == null || branch.getId() == null) return null;
-        return BranchEntity.builder().id(branch.getId()).name(branch.getName()).build();
+        return BranchEntity.builder()
+                .id(branch.getId())
+                .name(branch.getName())
+                .version(branch.getVersion())
+                .build();
     }
 
     @Named("mapRoleToRoleEntity")
     default RoleEntity mapRoleToRoleEntity(Role role) {
         if (role == null || role.getId() == null) return null;
-        return RoleEntity.builder().id(role.getId()).name(role.getName()).build();
+        return RoleEntity.builder()
+                .id(role.getId())
+                .name(role.getName())
+                .version(role.getVersion())
+                .build();
     }
 }

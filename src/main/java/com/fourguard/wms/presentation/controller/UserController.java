@@ -17,6 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import com.fourguard.wms.domain.ports.in.ResetUserPasswordUseCase;
+import com.fourguard.wms.domain.ports.in.ChangeTemporaryPasswordUseCase;
+import com.fourguard.wms.application.dto.request.auth.ChangePasswordRequest;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,9 +37,11 @@ public class UserController {
     private final GetUserUseCase getUserUseCase;
     private final UpdateUserUseCase updateUserUseCase;
     private final DeleteUserUseCase deleteUserUseCase;
+    private final ResetUserPasswordUseCase resetUserPasswordUseCase;
+    private final ChangeTemporaryPasswordUseCase changeTemporaryPasswordUseCase;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('SYS_ADMIN')")
+    @PreAuthorize("hasAuthority('USERS_CREATE')")
     @Operation(summary = "Crear usuario", description = "Crea un nuevo usuario en el sistema. Requiere permisos de administrador.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Usuario creado con éxito"),
@@ -50,7 +55,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'WMS_READ')")
+    @PreAuthorize("hasAuthority('USERS_READ')")
     @Operation(summary = "Obtener todos los usuarios", description = "Recupera la lista de todos los usuarios registrados.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lista de usuarios recuperada con éxito"),
@@ -63,7 +68,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'WMS_READ')")
+    @PreAuthorize("hasAuthority('USERS_READ')")
     @Operation(summary = "Obtener usuario por ID", description = "Recupera los detalles de un usuario específico a partir de su UUID.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Usuario encontrado con éxito"),
@@ -77,7 +82,7 @@ public class UserController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('SYS_ADMIN')")
+    @PreAuthorize("hasAuthority('USERS_UPDATE')")
     @Operation(summary = "Actualizar usuario", description = "Actualiza los datos de un usuario existente. Requiere permisos de administrador.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Usuario actualizado con éxito"),
@@ -92,7 +97,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('SYS_ADMIN')")
+    @PreAuthorize("hasAuthority('USERS_DELETE')")
     @Operation(summary = "Eliminar usuario", description = "Elimina físicamente a un usuario del sistema por su ID. Requiere permisos de administrador.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Usuario eliminado con éxito"),
@@ -103,5 +108,31 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable UUID id) {
         deleteUserUseCase.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.ok("Usuario eliminado con éxito"));
+    }
+
+    @PutMapping("/{id}/reset-password-temp")
+    @PreAuthorize("hasAuthority('USERS_UPDATE')")
+    @Operation(summary = "Restablecer contraseña a temporal", description = "Genera una contraseña temporal para un usuario y activa la bandera de cambio de clave obligatorio. Requiere privilegios USERS_UPDATE.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contraseña temporal generada con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    public ResponseEntity<ApiResponse<String>> resetToTemp(@PathVariable UUID id, java.security.Principal principal) {
+        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPassword(id, principal.getName());
+        return ResponseEntity.ok(ApiResponse.ok("Contraseña temporal generada con éxito", tempPassword));
+    }
+
+    @PutMapping("/change-password")
+    @Operation(summary = "Cambiar contraseña temporal a permanente", description = "Permite a un usuario autenticado cambiar su contraseña temporal a una contraseña permanente definitiva.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contraseña cambiada con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Contraseña no cumple criterios mínimos de seguridad o datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado")
+    })
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request, java.security.Principal principal) {
+        changeTemporaryPasswordUseCase.changePassword(principal.getName(), request.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.ok("Contraseña actualizada con éxito"));
     }
 }

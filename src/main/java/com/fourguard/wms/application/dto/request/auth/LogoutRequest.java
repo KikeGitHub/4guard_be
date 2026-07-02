@@ -1,6 +1,5 @@
 package com.fourguard.wms.application.dto.request.auth;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,9 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ForgotPasswordRequest {
+public class LogoutRequest {
 
-    @NotBlank(message = "El email es requerido")
-    @Email(message = "Formato de email inválido")
-    private String email;
+    @NotBlank(message = "El Refresh Token es requerido para cerrar sesión")
+    private String refreshToken;
 }
