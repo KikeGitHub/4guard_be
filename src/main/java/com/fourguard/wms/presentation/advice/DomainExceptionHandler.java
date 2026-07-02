@@ -1,5 +1,7 @@
 package com.fourguard.wms.presentation.advice;
 
+import com.fourguard.wms.domain.exception.AccountPermanentlyLockedException;
+import com.fourguard.wms.domain.exception.AccountTemporarilyLockedException;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
 import com.fourguard.wms.domain.exception.InvalidCredentialsException;
 import com.fourguard.wms.domain.exception.TokenExpiredException;
@@ -48,6 +50,30 @@ public class DomainExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleValidation(ValidationException ex) {
         log.warn("[VALIDATION-ERROR] Domain validation failed: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    // ── Lockout ───────────────────────────────────────────────────────────────
+
+    /**
+     * HTTP 423 — account temporarily locked due to repeated failed login attempts.
+     * Response includes the number of minutes remaining in the lock window.
+     */
+    @ExceptionHandler(AccountTemporarilyLockedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTempLocked(AccountTemporarilyLockedException ex) {
+        log.warn("[LOCKOUT] Rejected — account temporarily locked ({} min remaining): {}",
+                 ex.getMinutesRemaining(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.LOCKED)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /**
+     * HTTP 423 — account permanently locked; admin intervention required.
+     */
+    @ExceptionHandler(AccountPermanentlyLockedException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePermLocked(AccountPermanentlyLockedException ex) {
+        log.warn("[LOCKOUT] Rejected — account permanently locked: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.LOCKED)
                 .body(ApiResponse.error(ex.getMessage()));
     }
 }

@@ -37,6 +37,9 @@ public interface UserMapper {
     @Mapping(target = "role", ignore = true)         // Resolved in service
     @Mapping(target = "changePasswordRequired", ignore = true)
     @Mapping(target = "lastLogin", ignore = true)
+    @Mapping(target = "failedAttempts", ignore = true)
+    @Mapping(target = "lockedUntil", ignore = true)
+    @Mapping(target = "permanentlyLocked", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -50,6 +53,9 @@ public interface UserMapper {
     @Mapping(target = "role", ignore = true)         // Resolved in service
     @Mapping(target = "changePasswordRequired", ignore = true)
     @Mapping(target = "lastLogin", ignore = true)
+    @Mapping(target = "failedAttempts", ignore = true)
+    @Mapping(target = "lockedUntil", ignore = true)
+    @Mapping(target = "permanentlyLocked", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
