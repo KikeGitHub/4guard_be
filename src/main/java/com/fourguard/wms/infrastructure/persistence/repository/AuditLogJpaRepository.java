@@ -4,9 +4,13 @@ import com.fourguard.wms.infrastructure.persistence.entity.AuditLogEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -18,4 +22,10 @@ public interface AuditLogJpaRepository extends JpaRepository<AuditLogEntity, UUI
     List<AuditLogEntity> findByEntityTypeAndEntityId(String entityType, UUID entityId);
 
     List<AuditLogEntity> findByUserId(UUID userId);
+
+    List<AuditLogEntity> findByActionAndCreatedAtAfter(String action, OffsetDateTime since);
+
+    @Query("SELECT a FROM AuditLogEntity a WHERE a.userId = :userId AND a.action = 'LOGOUT' AND a.createdAt > :timestamp ORDER BY a.createdAt DESC")
+    Optional<AuditLogEntity> findLastLogoutForUserAfter(@Param("userId") UUID userId, @Param("timestamp") OffsetDateTime timestamp);
 }
+
