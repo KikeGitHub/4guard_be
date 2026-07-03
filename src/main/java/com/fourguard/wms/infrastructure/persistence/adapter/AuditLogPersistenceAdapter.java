@@ -6,7 +6,9 @@ import com.fourguard.wms.infrastructure.persistence.repository.AuditLogJpaReposi
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -30,4 +32,15 @@ public class AuditLogPersistenceAdapter implements AuditLogRepositoryPort {
     public List<AuditLogEntity> findByUserId(UUID userId) {
         return repository.findByUserId(userId);
     }
+
+    @Override
+    public List<AuditLogEntity> findByActionAndCreatedAtAfter(String action, OffsetDateTime since) {
+        return repository.findByActionAndCreatedAtAfter(action, since);
+    }
+
+    @Override
+    public Optional<AuditLogEntity> findLastLogoutForUserAfter(UUID userId, OffsetDateTime timestamp) {
+        return repository.findLastLogoutForUserAfter(userId, timestamp);
+    }
 }
+
