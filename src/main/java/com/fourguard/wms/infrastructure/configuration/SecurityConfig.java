@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 SecurityConstants.AUTH_PATTERN,
+                                SecurityConstants.RESET_PASSWORD_TEMP_PATTERN,
                                 SecurityConstants.ACTUATOR_HEALTH,
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
