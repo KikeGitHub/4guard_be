@@ -57,23 +57,23 @@ class ResetUserPasswordUseCaseImplTest {
     }
 
     @Test
-    void whenResetToTemporaryPassword_thenSuccess() {
+    void whenResetToTemporaryPassword_byUsername_thenSuccess() {
         // Arrange
-        when(userRepositoryPort.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(userRepositoryPort.findByUsernameOrEmail("testoperator")).thenReturn(Optional.of(userEntity));
         when(userRepositoryPort.findByUsername("adminUser")).thenReturn(Optional.of(adminUserEntity));
         when(passwordEncoder.encode(anyString())).thenReturn("newHashedPassword");
 
         // Act
-        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPassword(userId, "adminUser");
+        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPassword("testoperator", "adminUser");
 
         // Assert
         assertNotNull(tempPassword);
         assertTrue(tempPassword.startsWith("4G-"));
         assertTrue(tempPassword.endsWith("*"));
-        
+
         ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
         verify(userRepositoryPort, times(1)).save(captor.capture());
-        
+
         UserEntity savedUser = captor.getValue();
         assertEquals("newHashedPassword", savedUser.getPassword());
         assertTrue(savedUser.getChangePasswordRequired());
@@ -81,14 +81,33 @@ class ResetUserPasswordUseCaseImplTest {
     }
 
     @Test
-    void whenResetToTemporaryPassword_andUserNotFound_thenThrowException() {
+    void whenResetToTemporaryPassword_byEmail_thenSuccess() {
         // Arrange
-        when(userRepositoryPort.findById(userId)).thenReturn(Optional.empty());
+        when(userRepositoryPort.findByUsernameOrEmail("operator@4guard.mx")).thenReturn(Optional.of(userEntity));
+        when(userRepositoryPort.findByUsername("adminUser")).thenReturn(Optional.of(adminUserEntity));
+        when(passwordEncoder.encode(anyString())).thenReturn("newHashedPassword");
+
+        // Act
+        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPassword("operator@4guard.mx", "adminUser");
+
+        // Assert
+        assertNotNull(tempPassword);
+        assertTrue(tempPassword.startsWith("4G-"));
+        verify(userRepositoryPort, times(1)).save(any(UserEntity.class));
+    }
+
+    @Test
+    void whenResetToTemporaryPassword_andUserNotFound_thenThrowException() {
+        // Arrange — ningún usuario ni email coincide
+        when(userRepositoryPort.findByUsernameOrEmail("noexiste")).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () ->
-                resetUserPasswordUseCase.resetToTemporaryPassword(userId, "adminUser"));
-        
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () ->
+                resetUserPasswordUseCase.resetToTemporaryPassword("noexiste", "adminUser"));
+
+        assertTrue(ex.getMessage().contains("noexiste"),
+                "El mensaje de error debe incluir el identificador proporcionado");
+
         verify(userRepositoryPort, never()).save(any());
     }
 }
