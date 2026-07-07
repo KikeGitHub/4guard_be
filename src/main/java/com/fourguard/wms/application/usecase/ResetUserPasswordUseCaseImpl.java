@@ -24,18 +24,22 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
 
     @Override
     @Transactional
-    public String resetToTemporaryPassword(UUID userId, String adminUsername) {
-        log.info("[AUTH] Admin '{}' requested temporary password reset for user ID: {}", adminUsername, userId);
+    public String resetToTemporaryPassword(String usernameOrEmail, String adminUsername) {
+        log.info("[AUTH] Admin '{}' requested temporary password reset for user/email: {}", adminUsername, usernameOrEmail);
 
-        UserEntity userEntity = userRepositoryPort.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        // Buscar el usuario por username o email; lanzar error descriptivo si no existe
+        UserEntity userEntity = userRepositoryPort.findByUsernameOrEmail(usernameOrEmail)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "No se encontró ningún usuario con el nombre de usuario o correo electrónico: '" + usernameOrEmail + "'"));
+
+        UUID userId = userEntity.getId();
 
         UserEntity adminEntity = userRepositoryPort.findByUsername(adminUsername)
                 .orElseThrow(() -> new EntityNotFoundException("Admin not found with username: " + adminUsername));
 
         // Generate temporary password with complexity: 4G-<8 chars hex>-*
         String tempPassword = "4G-" + UUID.randomUUID().toString().substring(0, 8) + "*";
-        
+
         userEntity.setPassword(passwordEncoder.encode(tempPassword));
         userEntity.setChangePasswordRequired(true);
         userEntity.setUpdatedAt(OffsetDateTime.now());
@@ -45,7 +49,7 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
 
         auditService.log(adminEntity, "PASSWORD_RESET_TEMP", "USER", userId, null, java.util.Map.of("targetUsername", userEntity.getUsername(), "initiatedBy", adminUsername));
 
-        log.info("[AUDIT] Temporary password generated successfully for user ID: {}", userId);
+        log.info("[AUDIT] Temporary password generated successfully for user '{}' (ID: {})", userEntity.getUsername(), userId);
         return tempPassword;
     }
 }

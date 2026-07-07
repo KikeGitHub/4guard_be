@@ -195,17 +195,47 @@ class UserControllerTest {
     }
 
     @Test
-    void whenResetToTemp_thenReturn200() throws Exception {
+    void whenResetToTemp_byUsername_thenReturn200() throws Exception {
         // Arrange
-        when(resetUserPasswordUseCase.resetToTemporaryPassword(userId, "admin")).thenReturn("4G-temp123*");
+        when(resetUserPasswordUseCase.resetToTemporaryPassword("john.doe", "admin")).thenReturn("4G-temp123*");
 
         // Act & Assert
-        mockMvc.perform(put("/users/{id}/reset-password-temp", userId)
+        mockMvc.perform(put("/users/reset-password-temp")
+                        .param("usernameOrEmail", "john.doe")
                         .principal(() -> "admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Contraseña temporal generada con éxito"))
                 .andExpect(jsonPath("$.data").value("4G-temp123*"));
+    }
+
+    @Test
+    void whenResetToTemp_byEmail_thenReturn200() throws Exception {
+        // Arrange
+        when(resetUserPasswordUseCase.resetToTemporaryPassword("john.doe@4guard.com", "admin")).thenReturn("4G-abcd1234*");
+
+        // Act & Assert
+        mockMvc.perform(put("/users/reset-password-temp")
+                        .param("usernameOrEmail", "john.doe@4guard.com")
+                        .principal(() -> "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value("4G-abcd1234*"));
+    }
+
+    @Test
+    void whenResetToTemp_withNotExistingUser_thenReturn404() throws Exception {
+        // Arrange
+        when(resetUserPasswordUseCase.resetToTemporaryPassword("noexiste", "admin"))
+                .thenThrow(new EntityNotFoundException("No se encontró ningún usuario con el nombre de usuario o correo electrónico: 'noexiste'"));
+
+        // Act & Assert
+        mockMvc.perform(put("/users/reset-password-temp")
+                        .param("usernameOrEmail", "noexiste")
+                        .principal(() -> "admin"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("No se encontró ningún usuario con el nombre de usuario o correo electrónico: 'noexiste'"));
     }
 
     @Test
