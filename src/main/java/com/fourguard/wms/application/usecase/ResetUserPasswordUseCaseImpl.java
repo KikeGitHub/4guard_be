@@ -34,8 +34,7 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
 
         UUID userId = userEntity.getId();
 
-        UserEntity adminEntity = userRepositoryPort.findByUsername(adminUsername)
-                .orElseThrow(() -> new EntityNotFoundException("Admin not found with username: " + adminUsername));
+        UserEntity adminEntity = resolveAuditActor(adminUsername, userEntity);
 
         // Generate temporary password with complexity: 4G-<8 chars hex>-*
         String tempPassword = "4G-" + UUID.randomUUID().toString().substring(0, 8) + "*";
@@ -51,5 +50,14 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
 
         log.info("[AUDIT] Temporary password generated successfully for user '{}' (ID: {})", userEntity.getUsername(), userId);
         return tempPassword;
+    }
+
+    private UserEntity resolveAuditActor(String adminUsername, UserEntity fallbackUser) {
+        if ("SYSTEM".equals(adminUsername)) {
+            return fallbackUser;
+        }
+
+        return userRepositoryPort.findByUsername(adminUsername)
+                .orElseThrow(() -> new EntityNotFoundException("Admin not found with username: " + adminUsername));
     }
 }

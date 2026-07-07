@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,7 +31,6 @@ class ResetUserPasswordUseCaseImplTest {
     @Mock
     private com.fourguard.wms.shared.audit.AuditService auditService;
 
-    @InjectMocks
     private ResetUserPasswordUseCaseImpl resetUserPasswordUseCase;
 
     private UserEntity userEntity;
@@ -41,6 +39,8 @@ class ResetUserPasswordUseCaseImplTest {
 
     @BeforeEach
     void setUp() {
+        resetUserPasswordUseCase = new ResetUserPasswordUseCaseImpl(userRepositoryPort, passwordEncoder, auditService);
+
         userId = UUID.randomUUID();
         userEntity = UserEntity.builder()
                 .id(userId)
@@ -93,6 +93,21 @@ class ResetUserPasswordUseCaseImplTest {
         // Assert
         assertNotNull(tempPassword);
         assertTrue(tempPassword.startsWith("4G-"));
+        verify(userRepositoryPort, times(1)).save(any(UserEntity.class));
+    }
+
+    @Test
+    void whenResetToTemporaryPassword_withSystemActor_thenSuccess() {
+        // Arrange
+        when(userRepositoryPort.findByUsernameOrEmail("testoperator")).thenReturn(Optional.of(userEntity));
+        when(passwordEncoder.encode(anyString())).thenReturn("newHashedPassword");
+
+        // Act
+        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPassword("testoperator", "SYSTEM");
+
+        // Assert
+        assertNotNull(tempPassword);
+        verify(userRepositoryPort, never()).findByUsername("SYSTEM");
         verify(userRepositoryPort, times(1)).save(any(UserEntity.class));
     }
 
