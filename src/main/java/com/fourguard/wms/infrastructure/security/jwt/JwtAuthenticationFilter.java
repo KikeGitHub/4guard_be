@@ -36,8 +36,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // List of paths that should not be filtered by this JWT filter
     private static final List<String> EXCLUDED_PATHS = Arrays.asList(
-            SecurityConstants.AUTH_PATTERN,         // /auth/**
-            SecurityConstants.ACTUATOR_HEALTH,      // /actuator/health
+            SecurityConstants.AUTH_PATTERN,              // /auth/**
+            SecurityConstants.RESET_PASSWORD_TEMP_PATTERN, // /users/reset-password-temp (public)
+            SecurityConstants.ACTUATOR_HEALTH,           // /actuator/health
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",
