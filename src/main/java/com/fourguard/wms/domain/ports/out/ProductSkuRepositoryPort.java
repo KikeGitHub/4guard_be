@@ -13,4 +13,5 @@ public interface ProductSkuRepositoryPort {
     List<ProductSkuEntity>     findByClientId(UUID clientId);
     ProductSkuEntity           save(ProductSkuEntity sku);
     void                       deleteById(UUID id);
+    List<ProductSkuEntity>     findAll();
 }

@@ -13,4 +13,5 @@ public interface OrganizationRepositoryPort {
     List<OrganizationEntity>     findAll();
     OrganizationEntity           save(OrganizationEntity organization);
     boolean                      existsByCode(String code);
+    void                         deleteById(UUID id);
 }

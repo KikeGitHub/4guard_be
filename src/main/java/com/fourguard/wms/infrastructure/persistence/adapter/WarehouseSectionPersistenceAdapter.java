@@ -19,4 +19,5 @@ public class WarehouseSectionPersistenceAdapter implements WarehouseSectionRepos
     @Override public List<WarehouseSectionEntity>     findByBranchId(UUID bid)  { return repository.findByBranchId(bid); }
     @Override public WarehouseSectionEntity           save(WarehouseSectionEntity s) { return repository.save(s); }
     @Override public void                             deleteById(UUID id)        { repository.deleteById(id); }
+    @Override public List<WarehouseSectionEntity>     findAll()                  { return repository.findAll(); }
 }

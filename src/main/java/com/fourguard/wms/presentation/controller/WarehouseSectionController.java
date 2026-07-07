@@ -1,0 +1,103 @@
+package com.fourguard.wms.presentation.controller;
+
+import com.fourguard.wms.application.dto.request.CreateWarehouseSectionRequest;
+import com.fourguard.wms.application.dto.request.UpdateWarehouseSectionRequest;
+import com.fourguard.wms.application.dto.response.WarehouseSectionResponse;
+import com.fourguard.wms.domain.ports.in.WarehouseSectionUseCase;
+import com.fourguard.wms.shared.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+/** REST controller for Warehouse Section Management. */
+@RestController
+@RequestMapping("/warehouse-sections")
+@RequiredArgsConstructor
+@Tag(name = "Secciones de Almacén", description = "Endpoints para la gestión y administración de las áreas/secciones de una sucursal")
+public class WarehouseSectionController {
+
+    private final WarehouseSectionUseCase sectionUseCase;
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('SECTIONS_CREATE') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Crear sección de almacén", description = "Crea una nueva sección física o lógica dentro de una sucursal.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sección creada con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes")
+    })
+    public ResponseEntity<ApiResponse<WarehouseSectionResponse>> createSection(@Valid @RequestBody CreateWarehouseSectionRequest request) {
+        WarehouseSectionResponse response = sectionUseCase.createWarehouseSection(request);
+        return ResponseEntity.ok(ApiResponse.ok("Sección de almacén creada con éxito", response));
+    }
+
+    @PutMapping
+    @PreAuthorize("hasAuthority('SECTIONS_UPDATE') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Actualizar sección de almacén", description = "Actualiza los datos de una sección existente.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sección actualizada con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Sección no encontrada")
+    })
+    public ResponseEntity<ApiResponse<WarehouseSectionResponse>> updateSection(@Valid @RequestBody UpdateWarehouseSectionRequest request) {
+        WarehouseSectionResponse response = sectionUseCase.updateWarehouseSection(request);
+        return ResponseEntity.ok(ApiResponse.ok("Sección de almacén actualizada con éxito", response));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('SECTIONS_READ') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Obtener sección por ID", description = "Recupera los detalles de una sección específica por su UUID.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sección encontrada con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Sección no encontrada")
+    })
+    public ResponseEntity<ApiResponse<WarehouseSectionResponse>> getSectionById(@PathVariable UUID id) {
+        WarehouseSectionResponse response = sectionUseCase.getWarehouseSectionById(id);
+        return ResponseEntity.ok(ApiResponse.ok("Sección encontrada con éxito", response));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('SECTIONS_READ') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Obtener secciones", description = "Recupera la lista de secciones, opcionalmente filtrada por sucursal.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lista de secciones recuperada con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes")
+    })
+    public ResponseEntity<ApiResponse<List<WarehouseSectionResponse>>> getSections(@RequestParam(required = false) UUID branchId) {
+        List<WarehouseSectionResponse> response;
+        if (branchId != null) {
+            response = sectionUseCase.getWarehouseSectionsByBranchId(branchId);
+        } else {
+            response = sectionUseCase.getAllWarehouseSections();
+        }
+        return ResponseEntity.ok(ApiResponse.ok("Lista de secciones recuperada con éxito", response));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('SECTIONS_DELETE') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Eliminar sección de almacén", description = "Elimina físicamente una sección del sistema por su ID.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sección eliminada con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Sección no encontrada")
+    })
+    public ResponseEntity<ApiResponse<Void>> deleteSection(@PathVariable UUID id) {
+        sectionUseCase.deleteWarehouseSection(id);
+        return ResponseEntity.ok(ApiResponse.ok("Sección eliminada con éxito"));
+    }
+}

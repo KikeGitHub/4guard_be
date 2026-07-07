@@ -12,4 +12,5 @@ public interface ClientRepositoryPort {
     List<ClientEntity>     findByOrganizationId(UUID organizationId);
     ClientEntity           save(ClientEntity client);
     void                   deleteById(UUID id);
+    List<ClientEntity>     findAll();
 }

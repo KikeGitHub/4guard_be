@@ -12,4 +12,5 @@ public interface WarehouseSectionRepositoryPort {
     List<WarehouseSectionEntity>     findByBranchId(UUID branchId);
     WarehouseSectionEntity           save(WarehouseSectionEntity section);
     void                             deleteById(UUID id);
+    List<WarehouseSectionEntity>     findAll();
 }

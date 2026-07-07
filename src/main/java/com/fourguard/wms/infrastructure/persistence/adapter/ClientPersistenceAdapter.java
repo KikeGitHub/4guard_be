@@ -19,4 +19,5 @@ public class ClientPersistenceAdapter implements ClientRepositoryPort {
     @Override public List<ClientEntity>     findByOrganizationId(UUID orgId) { return repository.findByOrganizationId(orgId); }
     @Override public ClientEntity           save(ClientEntity c)             { return repository.save(c); }
     @Override public void                   deleteById(UUID id)              { repository.deleteById(id); }
+    @Override public List<ClientEntity>     findAll()                        { return repository.findAll(); }
 }

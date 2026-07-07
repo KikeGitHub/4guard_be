@@ -12,4 +12,6 @@ public interface BranchRepositoryPort {
     List<BranchEntity>     findByOrganizationId(UUID organizationId);
     BranchEntity           save(BranchEntity branch);
     boolean                existsByOrganizationIdAndCode(UUID organizationId, String code);
+    List<BranchEntity>     findAll();
+    void                   deleteById(UUID id);
 }

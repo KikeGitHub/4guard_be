@@ -13,4 +13,5 @@ public interface LocationRepositoryPort {
     List<LocationEntity>     findAvailableByBranchId(UUID branchId);
     LocationEntity           save(LocationEntity location);
     void                     deleteById(UUID id);
+    List<LocationEntity>     findAll();
 }
