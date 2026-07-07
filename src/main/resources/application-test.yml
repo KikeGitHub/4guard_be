@@ -29,8 +29,8 @@ cache:
 security:
   jwt:
     secret: "4guard-test-secret-key-static-for-unit-tests-only-never-use-in-production"
-    access-token-expiration: 3600000
-    refresh-token-expiration: 604800000
+    access-token-expiration: 1800000
+    refresh-token-expiration: 1800000
     password-reset-token-expiration: 900000
 
 logging:
