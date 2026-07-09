@@ -2,9 +2,9 @@ spring:
 
   # ── DataSource ───────────────────────────────────────────────────────────
   datasource:
-    url: jdbc:postgresql://localhost:5432/4guard_db
-    username: postgres
-    password: admin
+    url: jdbc:postgresql://ep-fragrant-lake-atdh4ky3-pooler.c-9.us-east-1.aws.neon.tech:5432/neondb
+    username: neondb_owner
+    password: npg_DFzSRi1rTZW6
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: 4guard-dev-pool
