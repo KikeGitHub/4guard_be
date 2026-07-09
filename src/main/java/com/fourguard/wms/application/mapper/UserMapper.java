@@ -47,7 +47,7 @@ public interface UserMapper {
     @Mapping(target = "updatedBy", ignore = true)
     User toUser(UserCreateRequest request);
 
-    @Mapping(target = "password", source = "password") // Password will be hashed in service if provided
+    @Mapping(target = "password", ignore = true) // Password is handled manually in service to preserve existing if not provided
     @Mapping(target = "organization", ignore = true) // Resolved in service
     @Mapping(target = "branch", ignore = true)       // Resolved in service
     @Mapping(target = "role", ignore = true)         // Resolved in service

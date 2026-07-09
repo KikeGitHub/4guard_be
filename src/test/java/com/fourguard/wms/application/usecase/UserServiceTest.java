@@ -22,6 +22,7 @@ import com.fourguard.wms.domain.exception.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -160,6 +161,11 @@ class UserServiceTest {
         assertNotNull(response);
         assertEquals(userId, response.getId());
         assertEquals("john.doe", response.getUsername());
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userMapper, times(1)).toUserEntity(userCaptor.capture());
+        assertTrue(userCaptor.getValue().getChangePasswordRequired());
+        assertEquals(0, userCaptor.getValue().getFailedAttempts());
+        assertFalse(userCaptor.getValue().getPermanentlyLocked());
         verify(userRepositoryPort, times(1)).save(any(UserEntity.class));
     }
 

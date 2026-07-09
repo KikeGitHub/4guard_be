@@ -64,7 +64,7 @@ public class UserEntity extends BaseVersionedEntity {
 
     @Column(name = "change_password_required", nullable = false)
     @Builder.Default
-    private Boolean changePasswordRequired = false;
+    private Boolean changePasswordRequired = true;
 
     @Column(name = "last_login")
     private OffsetDateTime lastLogin;
@@ -81,4 +81,12 @@ public class UserEntity extends BaseVersionedEntity {
     @Column(name = "permanently_locked", nullable = false)
     @Builder.Default
     private Boolean permanentlyLocked = false;
+
+    @PrePersist
+    protected void applyInsertDefaults() {
+        if (isEnabled == null) isEnabled = false;
+        if (changePasswordRequired == null) changePasswordRequired = true;
+        if (failedAttempts == null) failedAttempts = 0;
+        if (permanentlyLocked == null) permanentlyLocked = false;
+    }
 }
