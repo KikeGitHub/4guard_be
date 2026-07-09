@@ -58,6 +58,20 @@ security:
     secret: "4GUARD-WMS-dev-secret-key-for-local-development-only-256bits-minimum-length"
     access-token-expiration: 1800000      # 30 minutos (ms)
     refresh-token-expiration: 1800000     # 30 minutos (ms)
+  cors:
+    allowed-origin-patterns:
+      - "http://localhost:*"
+      - "https://*.netlify.app"
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      - PATCH
+    allowed-headers:
+      - "*"
+    allow-credentials: true
 
 # ── Logging (dev — verbose) ───────────────────────────────────────────────────
 logging:
