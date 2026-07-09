@@ -20,4 +20,6 @@ public class BranchPersistenceAdapter implements BranchRepositoryPort {
     @Override public List<BranchEntity>     findByOrganizationId(UUID orgId)                       { return repository.findByOrganizationId(orgId); }
     @Override public BranchEntity           save(BranchEntity branch)                              { return repository.save(branch); }
     @Override public boolean                existsByOrganizationIdAndCode(UUID orgId, String code) { return repository.existsByOrganizationIdAndCode(orgId, code); }
+    @Override public List<BranchEntity>     findAll()                                              { return repository.findAll(); }
+    @Override public void                   deleteById(UUID id)                                    { repository.deleteById(id); }
 }

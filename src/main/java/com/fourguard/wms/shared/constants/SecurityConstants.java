@@ -16,7 +16,10 @@ public final class SecurityConstants {
     // ── URL patterns ──────────────────────────────────────────────────────────
 
     /** Public auth endpoints — no JWT required. */
-    public static final String AUTH_PATTERN         = "/auth/**";
+    public static final String AUTH_PATTERN              = "/auth/**";
+
+    /** Password reset (temporary) — public, called before login. */
+    public static final String RESET_PASSWORD_TEMP_PATTERN = "/users/reset-password-temp";
 
     /** Swagger UI assets — public in dev, consider restricting in prod. */
     public static final String SWAGGER_UI_PATTERN   = "/swagger-ui/**";

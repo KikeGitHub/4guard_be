@@ -64,6 +64,9 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setStatus(request.getStatus() != null ? request.getStatus() : UserStatus.PENDING);
         user.setIsEnabled(request.getIsEnabled() != null ? request.getIsEnabled() : true);
+        user.setChangePasswordRequired(true);
+        user.setFailedAttempts(0);
+        user.setPermanentlyLocked(false);
         user.setCreatedAt(OffsetDateTime.now());
         user.setCreatedBy("SYSTEM"); // TODO: Replace with authenticated user
 

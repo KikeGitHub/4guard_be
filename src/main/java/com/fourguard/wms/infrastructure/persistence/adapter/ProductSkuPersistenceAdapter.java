@@ -20,4 +20,5 @@ public class ProductSkuPersistenceAdapter implements ProductSkuRepositoryPort {
     @Override public List<ProductSkuEntity>     findByClientId(UUID cid)                       { return repository.findByClientId(cid); }
     @Override public ProductSkuEntity           save(ProductSkuEntity sku)                     { return repository.save(sku); }
     @Override public void                       deleteById(UUID id)                            { repository.deleteById(id); }
+    @Override public List<ProductSkuEntity>     findAll()                                      { return repository.findAll(); }
 }

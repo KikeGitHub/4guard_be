@@ -5,6 +5,7 @@ import com.fourguard.wms.shared.constants.SecurityConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -22,8 +23,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
-
 /**
  * Complete Security Configuration — JWT Secured.
  *
@@ -40,6 +39,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final CorsProperties corsProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -49,8 +49,10 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 SecurityConstants.AUTH_PATTERN,
+                                SecurityConstants.RESET_PASSWORD_TEMP_PATTERN,
                                 SecurityConstants.ACTUATOR_HEALTH,
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
@@ -82,10 +84,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
-        config.setAllowCredentials(true);
+
+        if (!corsProperties.getAllowedOrigins().isEmpty()) {
+            config.setAllowedOrigins(corsProperties.getAllowedOrigins());
+        }
+
+        if (!corsProperties.getAllowedOriginPatterns().isEmpty()) {
+            config.setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns());
+        }
+
+        config.setAllowedMethods(corsProperties.getAllowedMethods());
+        config.setAllowedHeaders(corsProperties.getAllowedHeaders());
+        config.setAllowCredentials(corsProperties.isAllowCredentials());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

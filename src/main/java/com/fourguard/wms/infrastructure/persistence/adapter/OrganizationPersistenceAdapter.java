@@ -46,4 +46,10 @@ public class OrganizationPersistenceAdapter implements OrganizationRepositoryPor
     public boolean existsByCode(String code) {
         return repository.existsByCode(code);
     }
+
+    @Override
+    @CacheEvict(value = "catalogues", allEntries = true)
+    public void deleteById(UUID id) {
+        repository.deleteById(id);
+    }
 }

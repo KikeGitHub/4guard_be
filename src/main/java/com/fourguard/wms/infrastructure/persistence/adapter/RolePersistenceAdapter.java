@@ -47,4 +47,15 @@ public class RolePersistenceAdapter implements RoleRepositoryPort {
     public RoleEntity save(RoleEntity role) {
         return repository.save(role);
     }
+
+    @Override
+    @CacheEvict(value = "roles", allEntries = true)
+    public void deleteById(UUID id) {
+        repository.deleteById(id);
+    }
+
+    @Override
+    public boolean existsUserAssignedToRole(UUID roleId) {
+        return repository.existsUserWithRoleId(roleId);
+    }
 }

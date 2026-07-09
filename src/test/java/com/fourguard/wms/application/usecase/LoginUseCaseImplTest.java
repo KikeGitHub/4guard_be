@@ -35,6 +35,7 @@ class LoginUseCaseImplTest {
     @Mock private JwtProperties jwtProperties;
     @Mock private UserMapper userMapper;
     @Mock private com.fourguard.wms.shared.audit.AuditService auditService;
+    @Mock private LoginLockService loginLockService; // Added this line
 
     @InjectMocks
     private LoginUseCaseImpl loginUseCase;
@@ -70,6 +71,9 @@ class LoginUseCaseImplTest {
         when(jwtService.generateAccessToken(activeUser)).thenReturn("mock-access-token");
         when(jwtService.generateRefreshToken(activeUser)).thenReturn("mock-refresh-token");
         when(jwtProperties.getAccessTokenExpiration()).thenReturn(3600000L);
+        // Mock the behavior of loginLockService.checkLockStatus
+        doNothing().when(loginLockService).checkLockStatus(activeUser);
+
 
         UserInfoResponse userInfo = UserInfoResponse.builder()
                 .id(activeUser.getId())
@@ -88,6 +92,7 @@ class LoginUseCaseImplTest {
         assertEquals("mock-refresh-token", response.getRefreshToken());
         assertEquals("enrique", response.getUser().getUsername());
         verify(userRepositoryPort, times(1)).save(activeUser);
+        verify(loginLockService, times(1)).checkLockStatus(activeUser); // Verify it was called
     }
 
     @Test
@@ -98,6 +103,7 @@ class LoginUseCaseImplTest {
         // Act & Assert
         assertThrows(InvalidCredentialsException.class, () -> loginUseCase.login(loginRequest));
         verify(userRepositoryPort, never()).save(any());
+        verify(loginLockService, never()).checkLockStatus(any()); // Should not be called
     }
 
     @Test
@@ -105,10 +111,14 @@ class LoginUseCaseImplTest {
         // Arrange
         when(userRepositoryPort.findByUsernameOrEmail("enrique")).thenReturn(Optional.of(activeUser));
         when(passwordEncoder.matches("admin123", "encodedPassword")).thenReturn(false);
+        // Mock checkLockStatus as it would be called before password check
+        doNothing().when(loginLockService).checkLockStatus(activeUser);
+
 
         // Act & Assert
         assertThrows(InvalidCredentialsException.class, () -> loginUseCase.login(loginRequest));
         verify(userRepositoryPort, never()).save(any());
+        verify(loginLockService, times(1)).checkLockStatus(activeUser); // Should be called
     }
 
     @Test
@@ -116,9 +126,13 @@ class LoginUseCaseImplTest {
         // Arrange
         activeUser.setIsEnabled(false);
         when(userRepositoryPort.findByUsernameOrEmail("enrique")).thenReturn(Optional.of(activeUser));
+        // Mock checkLockStatus as it would be called before isEnabled check
+        doNothing().when(loginLockService).checkLockStatus(activeUser);
+
 
         // Act & Assert
         assertThrows(InvalidCredentialsException.class, () -> loginUseCase.login(loginRequest));
         verify(userRepositoryPort, never()).save(any());
+        verify(loginLockService, times(1)).checkLockStatus(activeUser); // Should be called
     }
 }

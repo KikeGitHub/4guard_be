@@ -1,8 +1,8 @@
 package com.fourguard.wms.application.mapper;
 
 import com.fourguard.wms.application.dto.request.CreateOrganizationRequest;
+import com.fourguard.wms.application.dto.request.UpdateOrganizationRequest;
 import com.fourguard.wms.application.dto.response.OrganizationResponse;
-import com.fourguard.wms.domain.enums.OrganizationStatus;
 import com.fourguard.wms.infrastructure.persistence.entity.OrganizationEntity;
 import org.mapstruct.*;
 
@@ -22,4 +22,15 @@ public interface OrganizationMapper {
     OrganizationEntity toEntity(CreateOrganizationRequest request);
 
     OrganizationResponse toResponse(OrganizationEntity entity);
+
+    @Mapping(target = "branches",  ignore = true)
+    @Mapping(target = "clients",   ignore = true)
+    @Mapping(target = "users",     ignore = true)
+    @Mapping(target = "version",   ignore = true)
+    @Mapping(target = "code",      ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    void updateEntityFromDto(UpdateOrganizationRequest request, @MappingTarget OrganizationEntity entity);
 }

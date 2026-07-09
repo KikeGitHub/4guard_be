@@ -26,4 +26,5 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
     @Override public void                 deleteById(UUID id)                 { repository.deleteById(id); } // Implementation for deleteById
     @Override public boolean              existsByUsername(String u)          { return repository.existsByUsername(u); }
     @Override public boolean              existsByEmail(String e)             { return repository.existsByEmail(e); }
+    @Override public List<UserEntity>     findAllById(List<UUID> ids)         { return repository.findAllById(ids); }
 }

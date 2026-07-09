@@ -195,17 +195,44 @@ class UserControllerTest {
     }
 
     @Test
-    void whenResetToTemp_thenReturn200() throws Exception {
-        // Arrange
-        when(resetUserPasswordUseCase.resetToTemporaryPassword(userId, "admin")).thenReturn("4G-temp123*");
+    void whenResetToTemp_byUsername_thenReturn200() throws Exception {
+        // Arrange — endpoint público, sin autenticación
+        when(resetUserPasswordUseCase.resetToTemporaryPassword("john.doe", "SYSTEM")).thenReturn("4G-temp123*");
 
         // Act & Assert
-        mockMvc.perform(put("/users/{id}/reset-password-temp", userId)
-                        .principal(() -> "admin"))
+        mockMvc.perform(put("/users/reset-password-temp")
+                        .param("usernameOrEmail", "john.doe"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Contraseña temporal generada con éxito"))
                 .andExpect(jsonPath("$.data").value("4G-temp123*"));
+    }
+
+    @Test
+    void whenResetToTemp_byEmail_thenReturn200() throws Exception {
+        // Arrange — endpoint público, sin autenticación
+        when(resetUserPasswordUseCase.resetToTemporaryPassword("john.doe@4guard.com", "SYSTEM")).thenReturn("4G-abcd1234*");
+
+        // Act & Assert
+        mockMvc.perform(put("/users/reset-password-temp")
+                        .param("usernameOrEmail", "john.doe@4guard.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value("4G-abcd1234*"));
+    }
+
+    @Test
+    void whenResetToTemp_withNotExistingUser_thenReturn404() throws Exception {
+        // Arrange
+        when(resetUserPasswordUseCase.resetToTemporaryPassword("noexiste", "SYSTEM"))
+                .thenThrow(new EntityNotFoundException("No se encontró ningún usuario con el nombre de usuario o correo electrónico: 'noexiste'"));
+
+        // Act & Assert
+        mockMvc.perform(put("/users/reset-password-temp")
+                        .param("usernameOrEmail", "noexiste"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("No se encontró ningún usuario con el nombre de usuario o correo electrónico: 'noexiste'"));
     }
 
     @Test

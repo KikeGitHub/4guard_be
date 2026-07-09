@@ -28,12 +28,12 @@ public class JwtProperties {
     private String secret;
 
     /**
-     * Access token validity in milliseconds. Default: 3600000 (1 hour).
+     * Access token validity in milliseconds. Default: 1800000 (30 minutes).
      */
-    private long accessTokenExpiration = 3_600_000L;
+    private long accessTokenExpiration = 1_800_000L;
 
     /**
-     * Refresh token validity in milliseconds. Default: 604800000 (7 days).
+     * Refresh token validity in milliseconds. Default: 1800000 (30 minutes).
      */
-    private long refreshTokenExpiration = 604_800_000L;
+    private long refreshTokenExpiration = 1_800_000L;
 }
