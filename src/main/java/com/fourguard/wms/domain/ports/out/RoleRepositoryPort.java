@@ -13,4 +13,7 @@ public interface RoleRepositoryPort {
     Optional<RoleEntity> findByIdWithPermissions(UUID id);
     List<RoleEntity>     findAll();
     RoleEntity           save(RoleEntity role);
+    void                 deleteById(UUID id);
+    /** Returns true if any user currently has this role assigned. */
+    boolean              existsUserAssignedToRole(UUID roleId);
 }
