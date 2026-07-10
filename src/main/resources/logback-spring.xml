@@ -4,7 +4,7 @@
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!--  DEV / TEST — Consola con colores                                   -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <springProfile name="dev,test">
+    <springProfile name="dev,test,local">
 
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
@@ -25,7 +25,7 @@
         </logger>
 
         <!-- SQL (solo en dev, no en test) -->
-        <springProfile name="dev">
+        <springProfile name="dev,local">
             <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
                 <appender-ref ref="CONSOLE"/>
             </logger>

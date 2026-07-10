@@ -2,7 +2,7 @@ spring:
   application:
     name: 4guard-wms-be
   profiles:
-    active: dev
+    default: local
 
   # ── Redis auto-config excluded globally; managed manually via RedisConfig ──
   autoconfigure:
@@ -52,6 +52,27 @@ springdoc:
 cache:
   redis:
     enabled: false
+
+# ── Security (local/default profile) ──────────────────────────────────────────
+security:
+  jwt:
+    secret: "4GUARD-WMS-local-secret-key-for-local-development-only-256bits-minimum-length"
+    access-token-expiration: 1800000    # 30 minutos (ms)
+    refresh-token-expiration: 1800000   # 30 minutos (ms)
+  cors:
+    allowed-origin-patterns:
+      - "http://localhost:*"
+      - "http://127.0.0.1:*"
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      - PATCH
+    allowed-headers:
+      - "*"
+    allow-credentials: true
 
 # ── Actuator ─────────────────────────────────────────────────────────────────
 management:
