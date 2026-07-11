@@ -4,7 +4,7 @@
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!--  DEV / TEST — Consola con colores                                   -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <springProfile name="dev,test">
+    <springProfile name="local,dev,test">
 
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>

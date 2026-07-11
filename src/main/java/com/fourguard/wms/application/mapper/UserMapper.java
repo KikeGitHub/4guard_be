@@ -16,6 +16,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +49,7 @@ public interface UserMapper {
     @Mapping(target = "updatedBy", ignore = true)
     User toUser(UserCreateRequest request);
 
-    @Mapping(target = "password", ignore = true) // Password is handled manually in service to preserve existing if not provided
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "organization", ignore = true) // Resolved in service
     @Mapping(target = "branch", ignore = true)       // Resolved in service
     @Mapping(target = "role", ignore = true)         // Resolved in service

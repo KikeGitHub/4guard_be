@@ -1,8 +1,6 @@
 spring:
   application:
     name: 4guard-wms-be
-  profiles:
-    active: dev
 
   # ── Redis auto-config excluded globally; managed manually via RedisConfig ──
   autoconfigure:
@@ -18,11 +16,6 @@ spring:
       write-dates-as-timestamps: false
     deserialization:
       fail-on-unknown-properties: false
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/4guard_db
-    username: postgres
-    password: admin
 
 # ── Server ──────────────────────────────────────────────────────────────────
 server:
@@ -48,7 +41,6 @@ springdoc:
   show-actuator: false
 
 # ── Cache (Redis desacoplado) ─────────────────────────────────────────────────
-# Para activar Redis: cache.redis.enabled=true + spring.data.redis.*
 cache:
   redis:
     enabled: false
@@ -67,6 +59,4 @@ management:
 logging:
   level:
     root: INFO
-    com.fourguard.wms: DEBUG
     org.springframework.security: INFO
-    org.hibernate.SQL: INFO
