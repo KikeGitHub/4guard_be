@@ -287,6 +287,29 @@ VALUES (
     'ACTIVE'
 ) ON CONFLICT (id) DO NOTHING;
 
+-- 8. Warehouse Sections for Branch CDMX-01 (3)
+INSERT INTO wms.warehouse_sections (id, branch_id, code, name, created_by, updated_by)
+VALUES 
+    ('d13f0907-9fa5-4bdf-87db-2eb5e7683941', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'SECOS',  'Racks Almacenamiento Seco', 'SYSTEM', 'SYSTEM'),
+    ('d13f0907-9fa5-4bdf-87db-2eb5e7683942', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'FRIA',   'Cámara Fría de Congelación', 'SYSTEM', 'SYSTEM'),
+    ('d13f0907-9fa5-4bdf-87db-2eb5e7683943', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'RECIBO', 'Zona de Recibo y Embarques', 'SYSTEM', 'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
+-- 9. Locations for Branch CDMX-01 (5)
+INSERT INTO wms.locations (id, branch_id, section_id, zone, aisle, rack, level, position, coord_x, coord_y, coord_z, type, capacity_units, current_occupancy, is_blocked, block_reason, created_by, updated_by)
+VALUES
+    -- Ubicación en Racks Secos (Nivel 1, libre)
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683951', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683941', 'A', '01', '05', 1, '01', 10, 20, 1, 'PALLET', 2, 0, FALSE, NULL, 'SYSTEM', 'SYSTEM'),
+    -- Ubicación en Racks Secos (Nivel 4, Bloqueada por daño)
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683952', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683941', 'A', '01', '05', 4, '01', 10, 20, 4, 'PALLET', 2, 0, TRUE, 'Daño estructural en viga superior', 'SYSTEM', 'SYSTEM'),
+    -- Estante en Cámara Fría
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683953', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683942', 'F', '10', '01', 2, '03', 50, 15, 2, 'SHELF',  5, 2, FALSE, NULL, 'SYSTEM', 'SYSTEM'),
+    -- Rampa 1 (Libre)
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683954', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683943', 'RAMPA', NULL, NULL, NULL, '01', 2, 2, 1, 'RAMP',   1, 0, FALSE, NULL, 'SYSTEM', 'SYSTEM'),
+    -- Rampa 2 (Ocupada)
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683955', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683943', 'RAMPA', NULL, NULL, NULL, '02', 2, 4, 1, 'RAMP',   1, 1, FALSE, NULL, 'SYSTEM', 'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
 
 
 
