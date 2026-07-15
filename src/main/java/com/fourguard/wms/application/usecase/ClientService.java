@@ -10,6 +10,7 @@ import com.fourguard.wms.domain.ports.out.ClientRepositoryPort;
 import com.fourguard.wms.domain.ports.out.OrganizationRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.ClientEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.OrganizationEntity;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class ClientService implements ClientUseCase {
     private final ClientRepositoryPort clientRepositoryPort;
     private final OrganizationRepositoryPort organizationRepositoryPort;
     private final ClientMapper clientMapper;
+    private final SecurityAuditHelper securityAuditHelper;
 
     @Override
     @Transactional
@@ -37,7 +39,7 @@ public class ClientService implements ClientUseCase {
 
         ClientEntity entity = clientMapper.toEntity(request);
         entity.setOrganization(organization);
-        entity.setCreatedBy("SYSTEM");
+        entity.setCreatedBy(securityAuditHelper.getCurrentUsername());
         ClientEntity saved = clientRepositoryPort.save(entity);
         return clientMapper.toResponse(saved);
     }
@@ -54,7 +56,7 @@ public class ClientService implements ClientUseCase {
 
         clientMapper.updateEntityFromDto(request, existing);
         existing.setOrganization(organization);
-        existing.setUpdatedBy("SYSTEM");
+        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
         ClientEntity saved = clientRepositoryPort.save(existing);
         return clientMapper.toResponse(saved);
     }
