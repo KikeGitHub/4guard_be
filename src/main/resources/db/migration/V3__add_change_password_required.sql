@@ -8,4 +8,4 @@
 SET search_path TO wms, public;
 
 ALTER TABLE wms.users 
-ADD COLUMN change_password_required BOOLEAN NOT NULL DEFAULT FALSE;
+ADD COLUMN IF NOT EXISTS change_password_required BOOLEAN NOT NULL DEFAULT FALSE;

@@ -14,6 +14,7 @@ import com.fourguard.wms.domain.ports.out.BranchRepositoryPort;
 import com.fourguard.wms.domain.ports.out.OrganizationRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.BranchEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.OrganizationEntity;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class BranchService implements CreateBranchUseCase, UpdateBranchUseCase, 
     private final BranchRepositoryPort branchRepositoryPort;
     private final OrganizationRepositoryPort organizationRepositoryPort;
     private final BranchMapper branchMapper;
+    private final SecurityAuditHelper securityAuditHelper;
 
     @Override
     @Transactional
@@ -45,7 +47,7 @@ public class BranchService implements CreateBranchUseCase, UpdateBranchUseCase, 
 
         BranchEntity entity = branchMapper.toEntity(request);
         entity.setOrganization(organization);
-        entity.setCreatedBy("SYSTEM");
+        entity.setCreatedBy(securityAuditHelper.getCurrentUsername());
         BranchEntity saved = branchRepositoryPort.save(entity);
         return branchMapper.toResponse(saved);
     }
@@ -67,7 +69,7 @@ public class BranchService implements CreateBranchUseCase, UpdateBranchUseCase, 
 
         branchMapper.updateEntityFromDto(request, existing);
         existing.setOrganization(organization);
-        existing.setUpdatedBy("SYSTEM");
+        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
         BranchEntity saved = branchRepositoryPort.save(existing);
         return branchMapper.toResponse(saved);
     }

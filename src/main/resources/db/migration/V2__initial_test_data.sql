@@ -277,6 +277,16 @@ VALUES (
     TRUE
 ) ON CONFLICT (username) DO NOTHING;
 
+-- 7. Test Client (Nestle Test)
+INSERT INTO wms.clients (id, organization_id, name, external_id, status)
+VALUES (
+    'c73f0907-9fa5-4bdf-87db-2eb5e7683938',
+    'a53f0907-9fa5-4bdf-87db-2eb5e7683935', -- 4GUARD LOGISTICS CORP
+    'Nestle Test',
+    'NESTLE-TEST-001',
+    'ACTIVE'
+) ON CONFLICT (id) DO NOTHING;
+
 
 
 

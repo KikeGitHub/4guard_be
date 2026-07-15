@@ -11,6 +11,7 @@ import com.fourguard.wms.domain.ports.out.PermissionRepositoryPort;
 import com.fourguard.wms.domain.ports.out.RoleRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.PermissionEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.RoleEntity;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class RoleService implements RoleUseCase {
     private final RoleRepositoryPort     roleRepositoryPort;
     private final PermissionRepositoryPort permissionRepositoryPort;
     private final RoleMapper             roleMapper;
+    private final SecurityAuditHelper    securityAuditHelper;
 
     // ── CREATE ────────────────────────────────────────────────────────────────
 
@@ -47,7 +49,7 @@ public class RoleService implements RoleUseCase {
         validateUniqueRoleName(request.getName(), null);
 
         RoleEntity entity = roleMapper.toEntity(request);
-        entity.setCreatedBy("SYSTEM"); // TODO: reemplazar con el usuario autenticado del SecurityContext
+        entity.setCreatedBy(securityAuditHelper.getCurrentUsername());
 
         if (request.getPermissionIds() != null && !request.getPermissionIds().isEmpty()) {
             Set<PermissionEntity> permissions = resolvePermissions(request.getPermissionIds());
@@ -70,7 +72,7 @@ public class RoleService implements RoleUseCase {
         validateUniqueRoleName(request.getName(), existing.getId());
 
         roleMapper.updateEntityFromDto(request, existing);
-        existing.setUpdatedBy("SYSTEM"); // TODO: reemplazar con el usuario autenticado del SecurityContext
+        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
 
         if (request.getPermissionIds() != null) {
             Set<PermissionEntity> permissions = resolvePermissions(request.getPermissionIds());
@@ -144,7 +146,7 @@ public class RoleService implements RoleUseCase {
 
         existing.getPermissions().clear();
         existing.getPermissions().addAll(permissions);
-        existing.setUpdatedBy("SYSTEM"); // TODO: reemplazar con el usuario autenticado del SecurityContext
+        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
 
         RoleEntity saved = roleRepositoryPort.save(existing);
         log.info("Permissions assigned successfully to role ID: {}", roleId);

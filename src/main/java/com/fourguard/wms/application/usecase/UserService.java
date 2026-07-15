@@ -20,8 +20,10 @@ import com.fourguard.wms.domain.ports.out.UserRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
 import com.fourguard.wms.domain.exception.ValidationException;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +33,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUserUseCase, DeleteUserUseCase {
 
@@ -41,6 +42,26 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
     private final RoleRepositoryPort roleRepositoryPort;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final SecurityAuditHelper securityAuditHelper;
+
+    // Usar @Lazy en el constructor para romper ciclos de dependencia
+    public UserService(
+            UserRepositoryPort userRepositoryPort,
+            OrganizationRepositoryPort organizationRepositoryPort,
+            BranchRepositoryPort branchRepositoryPort,
+            RoleRepositoryPort roleRepositoryPort,
+            @Lazy UserMapper userMapper,
+            PasswordEncoder passwordEncoder,
+            SecurityAuditHelper securityAuditHelper
+    ) {
+        this.userRepositoryPort = userRepositoryPort;
+        this.organizationRepositoryPort = organizationRepositoryPort;
+        this.branchRepositoryPort = branchRepositoryPort;
+        this.roleRepositoryPort = roleRepositoryPort;
+        this.userMapper = userMapper;
+        this.passwordEncoder = passwordEncoder;
+        this.securityAuditHelper = securityAuditHelper;
+    }
 
     @Transactional
     public UserResponse createUser(UserCreateRequest request) {
@@ -68,7 +89,7 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
         user.setFailedAttempts(0);
         user.setPermanentlyLocked(false);
         user.setCreatedAt(OffsetDateTime.now());
-        user.setCreatedBy("SYSTEM"); // TODO: Replace with authenticated user
+        user.setCreatedBy(securityAuditHelper.getCurrentUsername());
 
         UserEntity savedUserEntity = userRepositoryPort.save(userMapper.toUserEntity(user));
         return userMapper.toUserResponse(userMapper.toUser(savedUserEntity));
@@ -131,7 +152,7 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
         }
 
         existingUser.setUpdatedAt(OffsetDateTime.now());
-        existingUser.setUpdatedBy("SYSTEM"); // TODO: Replace with authenticated user
+        existingUser.setUpdatedBy(securityAuditHelper.getCurrentUsername());
 
         UserEntity updatedUserEntity = userRepositoryPort.save(userMapper.toUserEntity(existingUser));
         return userMapper.toUserResponse(userMapper.toUser(updatedUserEntity));
