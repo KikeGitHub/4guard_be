@@ -18,4 +18,7 @@ public class UserInfoResponse {
     private final int    roleLevel;
     private final List<String> permissions;
     private final Boolean changePasswordRequired;
+    private final UUID   organizationId;
+    private final String organizationName;
 }
+

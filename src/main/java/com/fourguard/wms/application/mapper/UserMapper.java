@@ -100,10 +100,12 @@ public interface UserMapper {
      * Full name is computed from first + last name.
      * Permissions are extracted from the EAGER-loaded role.
      */
-    @Mapping(target = "fullName",    expression = "java(buildFullName(entity))")
-    @Mapping(target = "role",        source  = "role.name")
-    @Mapping(target = "roleLevel",   source  = "role.level")
-    @Mapping(target = "permissions", expression = "java(extractPermissions(entity))")
+    @Mapping(target = "fullName",          expression = "java(buildFullName(entity))")
+    @Mapping(target = "role",              source  = "role.name")
+    @Mapping(target = "roleLevel",         source  = "role.level")
+    @Mapping(target = "permissions",       expression = "java(extractPermissions(entity))")
+    @Mapping(target = "organizationId",   source = "organization.id")
+    @Mapping(target = "organizationName", source = "organization.name")
     UserInfoResponse toUserInfoResponse(UserEntity entity);
 
     // ── Default helpers ───────────────────────────────────────────────────────
