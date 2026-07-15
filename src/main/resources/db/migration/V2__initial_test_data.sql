@@ -287,6 +287,16 @@ VALUES (
     'ACTIVE'
 ) ON CONFLICT (id) DO NOTHING;
 
+-- 8. Test Product SKUs for Nestle Test (5)
+INSERT INTO wms.products_sku (id, client_id, code, name, description, weight, unit, created_by, updated_by)
+VALUES
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683901', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-NESCAFE-200G',   'Nescafé Clásico 200g',       'Café soluble instantáneo Nescafé Clásico frasco de 200g', 0.200, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683902', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-CARNATION-1L',    'Carnation Clavel 1L',        'Leche evaporada Carnation Clavel de 1 Litro',              1.050, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683903', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-ABUELITA-6P',     'Chocolate Abuelita 6 piezas', 'Chocolate para mesa Abuelita caja con 6 tablillas',        0.540, 'CAJA', 'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683904', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-NESQUIK-340G',    'Cereal Nesquik 340g',        'Cereal de trigo, maíz y arroz sabor a chocolate Nesquik',  0.340, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683905', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-STAMARIA-600ML',  'Agua Santa María 600ml',      'Agua mineral natural de manantial Santa María 600ml',      0.620, 'PZA',  'SYSTEM', 'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
 
 
 
