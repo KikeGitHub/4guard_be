@@ -287,27 +287,14 @@ VALUES (
     'ACTIVE'
 ) ON CONFLICT (id) DO NOTHING;
 
--- 8. Warehouse Sections for Branch CDMX-01 (3)
-INSERT INTO wms.warehouse_sections (id, branch_id, code, name, created_by, updated_by)
-VALUES 
-    ('d13f0907-9fa5-4bdf-87db-2eb5e7683941', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'SECOS',  'Racks Almacenamiento Seco', 'SYSTEM', 'SYSTEM'),
-    ('d13f0907-9fa5-4bdf-87db-2eb5e7683942', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'FRIA',   'Cámara Fría de Congelación', 'SYSTEM', 'SYSTEM'),
-    ('d13f0907-9fa5-4bdf-87db-2eb5e7683943', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'RECIBO', 'Zona de Recibo y Embarques', 'SYSTEM', 'SYSTEM')
-ON CONFLICT (id) DO NOTHING;
-
--- 9. Locations for Branch CDMX-01 (5)
-INSERT INTO wms.locations (id, branch_id, section_id, zone, aisle, rack, level, position, coord_x, coord_y, coord_z, type, capacity_units, current_occupancy, is_blocked, block_reason, created_by, updated_by)
+-- 8. Test Product SKUs for Nestle Test (5)
+INSERT INTO wms.products_sku (id, client_id, code, name, description, weight, unit, created_by, updated_by)
 VALUES
-    -- Ubicación en Racks Secos (Nivel 1, libre)
-    ('e13f0907-9fa5-4bdf-87db-2eb5e7683951', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683941', 'A', '01', '05', 1, '01', 10, 20, 1, 'PALLET', 2, 0, FALSE, NULL, 'SYSTEM', 'SYSTEM'),
-    -- Ubicación en Racks Secos (Nivel 4, Bloqueada por daño)
-    ('e13f0907-9fa5-4bdf-87db-2eb5e7683952', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683941', 'A', '01', '05', 4, '01', 10, 20, 4, 'PALLET', 2, 0, TRUE, 'Daño estructural en viga superior', 'SYSTEM', 'SYSTEM'),
-    -- Estante en Cámara Fría
-    ('e13f0907-9fa5-4bdf-87db-2eb5e7683953', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683942', 'F', '10', '01', 2, '03', 50, 15, 2, 'SHELF',  5, 2, FALSE, NULL, 'SYSTEM', 'SYSTEM'),
-    -- Rampa 1 (Libre)
-    ('e13f0907-9fa5-4bdf-87db-2eb5e7683954', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683943', 'RAMPA', NULL, NULL, NULL, '01', 2, 2, 1, 'RAMP',   1, 0, FALSE, NULL, 'SYSTEM', 'SYSTEM'),
-    -- Rampa 2 (Ocupada)
-    ('e13f0907-9fa5-4bdf-87db-2eb5e7683955', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683943', 'RAMPA', NULL, NULL, NULL, '02', 2, 4, 1, 'RAMP',   1, 1, FALSE, NULL, 'SYSTEM', 'SYSTEM')
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683901', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-NESCAFE-200G',   'Nescafé Clásico 200g',       'Café soluble instantáneo Nescafé Clásico frasco de 200g', 0.200, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683902', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-CARNATION-1L',    'Carnation Clavel 1L',        'Leche evaporada Carnation Clavel de 1 Litro',              1.050, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683903', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-ABUELITA-6P',     'Chocolate Abuelita 6 piezas', 'Chocolate para mesa Abuelita caja con 6 tablillas',        0.540, 'CAJA', 'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683904', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-NESQUIK-340G',    'Cereal Nesquik 340g',        'Cereal de trigo, maíz y arroz sabor a chocolate Nesquik',  0.340, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683905', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-STAMARIA-600ML',  'Agua Santa María 600ml',      'Agua mineral natural de manantial Santa María 600ml',      0.620, 'PZA',  'SYSTEM', 'SYSTEM')
 ON CONFLICT (id) DO NOTHING;
 
 
