@@ -10,6 +10,7 @@ import com.fourguard.wms.domain.ports.out.BranchRepositoryPort;
 import com.fourguard.wms.domain.ports.out.WarehouseSectionRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.BranchEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.WarehouseSectionEntity;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class WarehouseSectionService implements WarehouseSectionUseCase {
     private final WarehouseSectionRepositoryPort sectionRepositoryPort;
     private final BranchRepositoryPort branchRepositoryPort;
     private final WarehouseSectionMapper sectionMapper;
+    private final SecurityAuditHelper securityAuditHelper;
 
     @Override
     @Transactional
@@ -37,7 +39,7 @@ public class WarehouseSectionService implements WarehouseSectionUseCase {
 
         WarehouseSectionEntity entity = sectionMapper.toEntity(request);
         entity.setBranch(branch);
-        entity.setCreatedBy("SYSTEM");
+        entity.setCreatedBy(securityAuditHelper.getCurrentUsername());
         WarehouseSectionEntity saved = sectionRepositoryPort.save(entity);
         return sectionMapper.toResponse(saved);
     }
@@ -54,7 +56,7 @@ public class WarehouseSectionService implements WarehouseSectionUseCase {
 
         sectionMapper.updateEntityFromDto(request, existing);
         existing.setBranch(branch);
-        existing.setUpdatedBy("SYSTEM");
+        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
         WarehouseSectionEntity saved = sectionRepositoryPort.save(existing);
         return sectionMapper.toResponse(saved);
     }

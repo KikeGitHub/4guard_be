@@ -11,6 +11,7 @@ import com.fourguard.wms.domain.ports.out.ClientRepositoryPort;
 import com.fourguard.wms.domain.ports.out.ProductSkuRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.ClientEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.ProductSkuEntity;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class ProductSkuService implements ProductSkuUseCase {
     private final ProductSkuRepositoryPort productSkuRepositoryPort;
     private final ClientRepositoryPort clientRepositoryPort;
     private final ProductSkuMapper productSkuMapper;
+    private final SecurityAuditHelper securityAuditHelper;
 
     @Override
     @Transactional
@@ -42,7 +44,7 @@ public class ProductSkuService implements ProductSkuUseCase {
 
         ProductSkuEntity entity = productSkuMapper.toEntity(request);
         entity.setClient(client);
-        entity.setCreatedBy("SYSTEM");
+        entity.setCreatedBy(securityAuditHelper.getCurrentUsername());
         ProductSkuEntity saved = productSkuRepositoryPort.save(entity);
         return productSkuMapper.toResponse(saved);
     }
@@ -64,7 +66,7 @@ public class ProductSkuService implements ProductSkuUseCase {
 
         productSkuMapper.updateEntityFromDto(request, existing);
         existing.setClient(client);
-        existing.setUpdatedBy("SYSTEM");
+        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
         ProductSkuEntity saved = productSkuRepositoryPort.save(existing);
         return productSkuMapper.toResponse(saved);
     }

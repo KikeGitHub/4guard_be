@@ -12,6 +12,7 @@ import com.fourguard.wms.domain.ports.in.GetOrganizationUseCase;
 import com.fourguard.wms.domain.ports.in.UpdateOrganizationUseCase;
 import com.fourguard.wms.domain.ports.out.OrganizationRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.OrganizationEntity;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class OrganizationService implements CreateOrganizationUseCase, UpdateOrg
 
     private final OrganizationRepositoryPort organizationRepositoryPort;
     private final OrganizationMapper organizationMapper;
+    private final SecurityAuditHelper securityAuditHelper;
 
     @Override
     @Transactional
@@ -38,7 +40,7 @@ public class OrganizationService implements CreateOrganizationUseCase, UpdateOrg
         }
 
         OrganizationEntity entity = organizationMapper.toEntity(request);
-        entity.setCreatedBy("SYSTEM"); // TODO: replace with security user audit
+        entity.setCreatedBy(securityAuditHelper.getCurrentUsername());
         OrganizationEntity saved = organizationRepositoryPort.save(entity);
         return organizationMapper.toResponse(saved);
     }
@@ -51,7 +53,7 @@ public class OrganizationService implements CreateOrganizationUseCase, UpdateOrg
                 .orElseThrow(() -> new EntityNotFoundException("Organización no encontrada con ID: " + request.getId()));
 
         organizationMapper.updateEntityFromDto(request, existing);
-        existing.setUpdatedBy("SYSTEM"); // TODO: replace with security user audit
+        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
         OrganizationEntity saved = organizationRepositoryPort.save(existing);
         return organizationMapper.toResponse(saved);
     }

@@ -12,6 +12,7 @@ import com.fourguard.wms.domain.ports.out.WarehouseSectionRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.BranchEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.LocationEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.WarehouseSectionEntity;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class LocationService implements LocationUseCase {
     private final BranchRepositoryPort branchRepositoryPort;
     private final WarehouseSectionRepositoryPort sectionRepositoryPort;
     private final LocationMapper locationMapper;
+    private final SecurityAuditHelper securityAuditHelper;
 
     @Override
     @Transactional
@@ -49,7 +51,7 @@ public class LocationService implements LocationUseCase {
         entity.setSection(section);
         entity.setCurrentOccupancy(0);
         entity.setIsBlocked(false);
-        entity.setCreatedBy("SYSTEM");
+        entity.setCreatedBy(securityAuditHelper.getCurrentUsername());
 
         LocationEntity saved = locationRepositoryPort.save(entity);
         return locationMapper.toResponse(saved);
@@ -80,7 +82,7 @@ public class LocationService implements LocationUseCase {
             existing.setBlockReason(request.getIsBlocked() ? request.getBlockReason() : null);
         }
         
-        existing.setUpdatedBy("SYSTEM");
+        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
         LocationEntity saved = locationRepositoryPort.save(existing);
         return locationMapper.toResponse(saved);
     }
