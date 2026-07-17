@@ -318,6 +318,25 @@ VALUES
     ('e13f0907-9fa5-4bdf-87db-2eb5e7683925', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683913', 'ZC', '00', '00', 0, 'R1', 1, 1, 0,   'RAMP',   1, 0, FALSE, 'SYSTEM', 'SYSTEM')
 ON CONFLICT (id) DO NOTHING;
 
+-- 11. Test Inventory Items (5)
+INSERT INTO wms.inventory_items (
+    id, organization_id, branch_id, client_id, sscc, external_ua, sku_id, location_id,
+    state, quantity, batch_number, manufacturing_date, expiration_date, sap_folio,
+    quarantine_reason, metadata, version, created_by, updated_by
+) VALUES
+    -- 1. Nescafé Clásico en Rack (Disponible)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683931', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000001', 'UA-001', 'f83f0907-9fa5-4bdf-87db-2eb5e7683901', 'e13f0907-9fa5-4bdf-87db-2eb5e7683921', 30, 500.000, 'B-NES-01', '2026-06-01', '2027-06-01', 'SAP-10001', NULL, '{}'::jsonb, 1, 'SYSTEM', 'SYSTEM'),
+    -- 2. Carnation Clavel en Rack (En Calidad)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683932', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000002', 'UA-002', 'f83f0907-9fa5-4bdf-87db-2eb5e7683902', 'e13f0907-9fa5-4bdf-87db-2eb5e7683922', 20, 120.000, 'B-CAR-02', '2026-05-15', '2027-05-15', 'SAP-10002', 'Esperando aprobación microbiológica', '{"temperature_controlled": true}'::jsonb, 1, 'SYSTEM', 'SYSTEM'),
+    -- 3. Chocolate Abuelita en Rack (Disponible)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683933', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000003', 'UA-003', 'f83f0907-9fa5-4bdf-87db-2eb5e7683903', 'e13f0907-9fa5-4bdf-87db-2eb5e7683923', 30, 800.000, 'B-ABU-03', '2026-04-10', '2027-04-10', 'SAP-10003', NULL, '{}'::jsonb, 1, 'SYSTEM', 'SYSTEM'),
+    -- 4. Nesquik en Área de Picking (Disponible)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683934', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000004', 'UA-004', 'f83f0907-9fa5-4bdf-87db-2eb5e7683904', 'e13f0907-9fa5-4bdf-87db-2eb5e7683924', 30, 45.000,  'B-NESQ-04', '2026-03-20', '2027-03-20', 'SAP-10004', NULL, '{}'::jsonb, 1, 'SYSTEM', 'SYSTEM'),
+    -- 5. Agua Santa María en Rampa (Recibido)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683935', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000005', 'UA-005', 'f83f0907-9fa5-4bdf-87db-2eb5e7683905', 'e13f0907-9fa5-4bdf-87db-2eb5e7683925', 10, 2400.000, 'B-SMA-05', '2026-07-01', '2027-07-01', 'SAP-10005', NULL, '{}'::jsonb, 1, 'SYSTEM', 'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
+
 
 
 
