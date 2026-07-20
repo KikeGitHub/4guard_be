@@ -287,6 +287,57 @@ VALUES (
     'ACTIVE'
 ) ON CONFLICT (id) DO NOTHING;
 
+-- 8. Test Product SKUs for Nestle Test (5)
+INSERT INTO wms.products_sku (id, client_id, code, name, description, weight, unit, created_by, updated_by)
+VALUES
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683901', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-NESCAFE-200G',   'Nescafé Clásico 200g',       'Café soluble instantáneo Nescafé Clásico frasco de 200g', 0.200, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683902', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-CARNATION-1L',    'Carnation Clavel 1L',        'Leche evaporada Carnation Clavel de 1 Litro',              1.050, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683903', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-ABUELITA-6P',     'Chocolate Abuelita 6 piezas', 'Chocolate para mesa Abuelita caja con 6 tablillas',        0.540, 'CAJA', 'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683904', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-NESQUIK-340G',    'Cereal Nesquik 340g',        'Cereal de trigo, maíz y arroz sabor a chocolate Nesquik',  0.340, 'PZA',  'SYSTEM', 'SYSTEM'),
+    ('f83f0907-9fa5-4bdf-87db-2eb5e7683905', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', 'NES-STAMARIA-600ML',  'Agua Santa María 600ml',      'Agua mineral natural de manantial Santa María 600ml',      0.620, 'PZA',  'SYSTEM', 'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
+-- 9. Test Warehouse Sections (3)
+INSERT INTO wms.warehouse_sections (id, branch_id, code, name, created_by, updated_by)
+VALUES
+    ('d13f0907-9fa5-4bdf-87db-2eb5e7683911', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'SEC-RACK',   'Zona de Racks de Palletizado',  'SYSTEM', 'SYSTEM'),
+    ('d13f0907-9fa5-4bdf-87db-2eb5e7683912', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'SEC-PICK',   'Área de Picking Manual',        'SYSTEM', 'SYSTEM'),
+    ('d13f0907-9fa5-4bdf-87db-2eb5e7683913', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'SEC-RAMP',   'Andenes de Carga y Descarga',   'SYSTEM', 'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
+-- 10. Test Locations (5)
+INSERT INTO wms.locations (id, branch_id, section_id, zone, aisle, rack, level, position, coord_x, coord_y, coord_z, type, capacity_units, current_occupancy, is_blocked, created_by, updated_by)
+VALUES
+    -- Racks (3 ubicaciones de pallets)
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683921', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683911', 'ZA', '01', '01', 1, 'A', 5, 10, 1, 'PALLET', 1, 0, FALSE, 'SYSTEM', 'SYSTEM'),
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683922', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683911', 'ZA', '01', '01', 2, 'A', 5, 10, 2, 'PALLET', 1, 0, FALSE, 'SYSTEM', 'SYSTEM'),
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683923', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683911', 'ZA', '01', '02', 1, 'B', 8, 10, 1, 'PALLET', 1, 0, FALSE, 'SYSTEM', 'SYSTEM'),
+    -- Picking (1 ubicación de caja/bin)
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683924', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683912', 'ZB', '03', '05', 3, 'C', 15, 20, 3, 'BIN',    1, 0, FALSE, 'SYSTEM', 'SYSTEM'),
+    -- Ramp/Dock (1 ubicación de rampa)
+    ('e13f0907-9fa5-4bdf-87db-2eb5e7683925', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'd13f0907-9fa5-4bdf-87db-2eb5e7683913', 'ZC', '00', '00', 0, 'R1', 1, 1, 0,   'RAMP',   1, 0, FALSE, 'SYSTEM', 'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
+-- 11. Test Inventory Items (5)
+INSERT INTO wms.inventory_items (
+    id, organization_id, branch_id, client_id, sscc, external_ua, sku_id, location_id,
+    state, quantity, batch_number, manufacturing_date, expiration_date, sap_folio,
+    quarantine_reason, metadata, version, created_by, updated_by
+) VALUES
+    -- 1. Nescafé Clásico en Rack (Disponible)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683931', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000001', 'UA-001', 'f83f0907-9fa5-4bdf-87db-2eb5e7683901', 'e13f0907-9fa5-4bdf-87db-2eb5e7683921', 30, 500.000, 'B-NES-01', '2026-06-01', '2027-06-01', 'SAP-10001', NULL, '{}'::jsonb, 1, 'SYSTEM', 'SYSTEM'),
+    -- 2. Carnation Clavel en Rack (En Calidad)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683932', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000002', 'UA-002', 'f83f0907-9fa5-4bdf-87db-2eb5e7683902', 'e13f0907-9fa5-4bdf-87db-2eb5e7683922', 20, 120.000, 'B-CAR-02', '2026-05-15', '2027-05-15', 'SAP-10002', 'Esperando aprobación microbiológica', '{"temperature_controlled": true}'::jsonb, 1, 'SYSTEM', 'SYSTEM'),
+    -- 3. Chocolate Abuelita en Rack (Disponible)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683933', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000003', 'UA-003', 'f83f0907-9fa5-4bdf-87db-2eb5e7683903', 'e13f0907-9fa5-4bdf-87db-2eb5e7683923', 30, 800.000, 'B-ABU-03', '2026-04-10', '2027-04-10', 'SAP-10003', NULL, '{}'::jsonb, 1, 'SYSTEM', 'SYSTEM'),
+    -- 4. Nesquik en Área de Picking (Disponible)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683934', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000004', 'UA-004', 'f83f0907-9fa5-4bdf-87db-2eb5e7683904', 'e13f0907-9fa5-4bdf-87db-2eb5e7683924', 30, 45.000,  'B-NESQ-04', '2026-03-20', '2027-03-20', 'SAP-10004', NULL, '{}'::jsonb, 1, 'SYSTEM', 'SYSTEM'),
+    -- 5. Agua Santa María en Rampa (Recibido)
+    ('c13f0907-9fa5-4bdf-87db-2eb5e7683935', 'a53f0907-9fa5-4bdf-87db-2eb5e7683935', 'b73f0907-9fa5-4bdf-87db-2eb5e7683936', 'c73f0907-9fa5-4bdf-87db-2eb5e7683938', '375000000000000005', 'UA-005', 'f83f0907-9fa5-4bdf-87db-2eb5e7683905', 'e13f0907-9fa5-4bdf-87db-2eb5e7683925', 10, 2400.000, 'B-SMA-05', '2026-07-01', '2027-07-01', 'SAP-10005', NULL, '{}'::jsonb, 1, 'SYSTEM', 'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
+
+
 
 
 
