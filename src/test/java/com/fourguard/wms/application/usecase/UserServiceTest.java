@@ -19,6 +19,7 @@ import com.fourguard.wms.infrastructure.persistence.entity.RoleEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
 import com.fourguard.wms.domain.exception.ValidationException;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper; // Importar
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +53,8 @@ class UserServiceTest {
     private UserMapper userMapper;
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private SecurityAuditHelper securityAuditHelper; // <-- 1. AÑADIR EL MOCK
 
     @InjectMocks
     private UserService userService;
@@ -153,6 +156,8 @@ class UserServiceTest {
         when(userRepositoryPort.save(any(UserEntity.class))).thenReturn(userEntity);
         when(userMapper.toUser(any(UserEntity.class))).thenReturn(user);
         when(userMapper.toUserResponse(any(User.class))).thenReturn(userResponse);
+        
+        when(securityAuditHelper.getCurrentUsername()).thenReturn("test-admin"); // <-- 2. CONFIGURAR EL COMPORTAMIENTO
 
         // Act
         UserResponse response = userService.createUser(createRequest);
@@ -166,6 +171,7 @@ class UserServiceTest {
         assertTrue(userCaptor.getValue().getChangePasswordRequired());
         assertEquals(0, userCaptor.getValue().getFailedAttempts());
         assertFalse(userCaptor.getValue().getPermanentlyLocked());
+        assertEquals("test-admin", userCaptor.getValue().getCreatedBy()); // Verificar que se establece el creador
         verify(userRepositoryPort, times(1)).save(any(UserEntity.class));
     }
 
@@ -254,6 +260,8 @@ class UserServiceTest {
                 .email("john.updated@4guard.com")
                 .build();
         when(userMapper.toUserResponse(any(User.class))).thenReturn(updatedResponse);
+        
+        when(securityAuditHelper.getCurrentUsername()).thenReturn("test-admin"); // <-- 2. CONFIGURAR EL COMPORTAMIENTO
 
         // Act
         UserResponse response = userService.updateUser(updateRequest);
@@ -261,6 +269,9 @@ class UserServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals("john.updated", response.getUsername());
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userMapper, times(1)).toUserEntity(userCaptor.capture());
+        assertEquals("test-admin", userCaptor.getValue().getUpdatedBy()); // Verificar que se establece el actualizador
         verify(userRepositoryPort, times(1)).save(any(UserEntity.class));
     }
 
