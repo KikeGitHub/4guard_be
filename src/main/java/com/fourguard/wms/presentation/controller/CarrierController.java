@@ -105,7 +105,7 @@ public class CarrierController {
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority('CARRIERS_UPDATE') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Actualizar estado de transportista", description = "Cambia el estado operativo de un transportista (ACTIVE, INACTIVE, SUSPENDED).")
+    @Operation(summary = "Actualizar estado de transportista", description = "Cambia el estado operativo de un transportista (ACTIVE, INACTIVE, SUSPENDED) registrando el motivo y observaciones del modal.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Estado actualizado con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Estado inválido o petición incorrecta"),
@@ -115,8 +115,8 @@ public class CarrierController {
     })
     public ResponseEntity<ApiResponse<CarrierResponse>> updateCarrierStatus(
             @PathVariable UUID id,
-            @RequestParam CarrierStatus status) {
-        CarrierResponse response = carrierUseCase.updateCarrierStatus(id, status);
+            @Valid @RequestBody com.fourguard.wms.application.dto.request.UpdateCarrierStatusRequest request) {
+        CarrierResponse response = carrierUseCase.updateCarrierStatus(id, request);
         return ResponseEntity.ok(ApiResponse.ok("Estado del transportista actualizado con éxito", response));
     }
 

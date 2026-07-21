@@ -185,24 +185,43 @@ public class CarrierService implements CarrierUseCase {
 
     @Override
     @Transactional
-    public CarrierResponse updateCarrierStatus(UUID id, CarrierStatus status) {
-        log.info("Updating status for carrier: {} to {}", id, status);
+    public CarrierResponse updateCarrierStatus(UUID id, com.fourguard.wms.application.dto.request.UpdateCarrierStatusRequest request) {
+        CarrierStatus newStatus;
+        try {
+            newStatus = CarrierStatus.valueOf(request.getStatus().toUpperCase());
+        } catch (Exception e) {
+            throw new ValidationException("Estado inválido: " + request.getStatus());
+        }
+
+        log.info("Updating status for carrier: {} to {}", id, newStatus);
         CarrierEntity existing = carrierRepositoryPort.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Transportista no encontrado con ID: " + id));
 
-        if (existing.getStatus() == status) {
-            return carrierMapper.toResponse(existing);
-        }
-
         CarrierEntity originalSnapshot = cloneCarrierEntity(existing);
-        existing.setStatus(status);
+        existing.setStatus(newStatus);
 
         String currentUser = securityAuditHelper.getCurrentUsername();
         existing.setUpdatedBy(currentUser);
 
         CarrierEntity saved = carrierRepositoryPort.save(existing);
 
-        logAuditChange(currentUser, "CARRIER_STATUS_UPDATED", saved.getId(), originalSnapshot, saved);
+        Map<String, Object> beforeState = buildAuditState(originalSnapshot);
+        Map<String, Object> afterState = buildAuditState(saved);
+        if (request.getReason() != null && !request.getReason().isBlank()) {
+            afterState.put("reason", request.getReason());
+        }
+        if (request.getObservations() != null && !request.getObservations().isBlank()) {
+            afterState.put("observations", request.getObservations());
+        }
+
+        try {
+            UserEntity actor = userRepositoryPort.findByUsername(currentUser).orElse(null);
+            if (actor != null) {
+                auditService.log(actor, "CARRIER_STATUS_UPDATED", "CARRIER", saved.getId(), beforeState, afterState);
+            }
+        } catch (Exception e) {
+            log.error("Failed to persist status update audit log", e);
+        }
 
         return carrierMapper.toResponse(saved);
     }
@@ -226,13 +245,20 @@ public class CarrierService implements CarrierUseCase {
                                 .map(UserEntity::getUsername)
                                 .orElse("UNKNOWN");
                     }
+                    List<CarrierAuditResponse.AuditDetailResponse> detailResponses = logEntry.getDetails().stream()
+                            .map(d -> CarrierAuditResponse.AuditDetailResponse.builder()
+                                    .fieldName(d.getFieldName())
+                                    .oldValue(d.getOldValue())
+                                    .newValue(d.getNewValue())
+                                    .build())
+                            .collect(Collectors.toList());
+
                     return CarrierAuditResponse.builder()
                             .logId(logEntry.getLogId())
                             .action(logEntry.getAction())
                             .username(username)
                             .createdAt(logEntry.getCreatedAt())
-                            .beforeState(logEntry.getBeforeState())
-                            .afterState(logEntry.getAfterState())
+                            .details(detailResponses)
                             .build();
                 })
                 .collect(Collectors.toList());
