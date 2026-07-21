@@ -1,0 +1,27 @@
+# Ignore local build output
+target/
+*.jar
+*.war
+
+# Ignore source control directories
+.git/
+.gitignore
+
+# Ignore IDE configurations
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Ignore logs
+*.log
+app.log
+
+# Ignore local environment settings
+.env
+.env.local
+
+# Ignore docker files themselves
+Dockerfile
+.dockerignore
