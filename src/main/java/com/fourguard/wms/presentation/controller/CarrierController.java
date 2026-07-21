@@ -28,7 +28,7 @@ public class CarrierController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('CARRIERS_CREATE') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Crear transportista", description = "Registra un nuevo transportista en el WMS.")
+    @Operation(summary = "Crear transportista", description = "Registra un nuevo transportista en el WMS con sus capacidades de vehículos y clientes preferenciales.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Transportista creado con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
@@ -42,7 +42,7 @@ public class CarrierController {
 
     @PutMapping
     @PreAuthorize("hasAuthority('CARRIERS_UPDATE') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Actualizar transportista", description = "Actualiza los datos de un transportista existente.")
+    @Operation(summary = "Actualizar transportista", description = "Actualiza los datos, capacidades y relaciones de un transportista existente.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Transportista actualizado con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
@@ -57,7 +57,7 @@ public class CarrierController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('CARRIERS_READ') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Obtener transportista por ID", description = "Recupera los detalles de un transportista específico por su UUID.")
+    @Operation(summary = "Obtener transportista por ID", description = "Recupera los detalles completos de un transportista específico por su UUID.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Transportista encontrado con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
@@ -71,7 +71,7 @@ public class CarrierController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('CARRIERS_READ') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Obtener transportistas", description = "Recupera la lista de transportistas, opcionalmente filtrando por organización.")
+    @Operation(summary = "Obtener transportistas", description = "Recupera la lista de transportistas de la organización, incluyendo sus relaciones.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lista de transportistas recuperada con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
@@ -89,7 +89,7 @@ public class CarrierController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('CARRIERS_DELETE') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Eliminar transportista", description = "Elimina físicamente un transportista del sistema por su ID.")
+    @Operation(summary = "Eliminar transportista", description = "Elimina físicamente un transportista del sistema por su ID (e inyecta el log a la bitácora de auditoría).")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Transportista eliminado con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),

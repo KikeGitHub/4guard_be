@@ -12,8 +12,10 @@ import com.fourguard.wms.domain.ports.out.CarrierRepositoryPort;
 import com.fourguard.wms.domain.ports.out.OrganizationRepositoryPort;
 import com.fourguard.wms.domain.ports.out.UserRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.CarrierEntity;
+import com.fourguard.wms.infrastructure.persistence.entity.ClientEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.OrganizationEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
+import com.fourguard.wms.infrastructure.persistence.repository.ClientJpaRepository;
 import com.fourguard.wms.shared.audit.AuditService;
 import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +38,7 @@ public class CarrierService implements CarrierUseCase {
     private final CarrierRepositoryPort carrierRepositoryPort;
     private final OrganizationRepositoryPort organizationRepositoryPort;
     private final UserRepositoryPort userRepositoryPort;
+    private final ClientJpaRepository clientJpaRepository;
     private final CarrierMapper carrierMapper;
     private final SecurityAuditHelper securityAuditHelper;
     private final AuditService auditService;
@@ -48,8 +52,6 @@ public class CarrierService implements CarrierUseCase {
                 .orElseThrow(() -> new EntityNotFoundException("Organización no encontrada con ID: " + request.getOrganizationId()));
 
         // Validar unicidad de nombre en la misma organización
-        // Nota: Podemos usar una consulta en port o repository para verificar.
-        // Dado que añadimos la restricción UNIQUE en base de datos, un check rápido previene excepciones de BD.
         List<CarrierEntity> existingCarriers = carrierRepositoryPort.findByOrganizationId(request.getOrganizationId());
         boolean nameExists = existingCarriers.stream()
                 .anyMatch(c -> c.getName().equalsIgnoreCase(request.getName()));
@@ -60,6 +62,17 @@ public class CarrierService implements CarrierUseCase {
         CarrierEntity entity = carrierMapper.toEntity(request);
         entity.setOrganization(organization);
         
+        // Asignar lista de capacidades de vehículos
+        if (request.getVehicleTypes() != null) {
+            entity.setVehicleTypes(new ArrayList<>(request.getVehicleTypes()));
+        }
+
+        // Asignar lista de clientes preferentes
+        if (request.getPreferredClientIds() != null && !request.getPreferredClientIds().isEmpty()) {
+            List<ClientEntity> preferredClients = clientJpaRepository.findAllById(request.getPreferredClientIds());
+            entity.setPreferredClients(preferredClients);
+        }
+
         String currentUser = securityAuditHelper.getCurrentUsername();
         entity.setCreatedBy(currentUser);
         entity.setUpdatedBy(currentUser);
@@ -93,11 +106,27 @@ public class CarrierService implements CarrierUseCase {
             }
         }
 
-        CarrierEntity originalSnapshot = existing.toBuilder().build();
+        // Tomar snapshot para la auditoría antes de modificar
+        CarrierEntity originalSnapshot = cloneCarrierEntity(existing);
 
         carrierMapper.updateEntityFromDto(request, existing);
         existing.setOrganization(organization);
         
+        // Actualizar capacidades de vehículos
+        if (request.getVehicleTypes() != null) {
+            existing.getVehicleTypes().clear();
+            existing.getVehicleTypes().addAll(request.getVehicleTypes());
+        }
+
+        // Actualizar clientes preferentes
+        if (request.getPreferredClientIds() != null) {
+            existing.getPreferredClients().clear();
+            if (!request.getPreferredClientIds().isEmpty()) {
+                List<ClientEntity> preferredClients = clientJpaRepository.findAllById(request.getPreferredClientIds());
+                existing.getPreferredClients().addAll(preferredClients);
+            }
+        }
+
         String currentUser = securityAuditHelper.getCurrentUsername();
         existing.setUpdatedBy(currentUser);
 
@@ -151,6 +180,30 @@ public class CarrierService implements CarrierUseCase {
         carrierRepositoryPort.deleteById(id);
     }
 
+    private CarrierEntity cloneCarrierEntity(CarrierEntity source) {
+        return CarrierEntity.builder()
+                .id(source.getId())
+                .organization(source.getOrganization())
+                .name(source.getName())
+                .tradeName(source.getTradeName())
+                .taxId(source.getTaxId())
+                .carrierType(source.getCarrierType())
+                .status(source.getStatus())
+                .contactName(source.getContactName())
+                .contactPhone(source.getContactPhone())
+                .contactEmail(source.getContactEmail())
+                .serviceType(source.getServiceType())
+                .permitNumber(source.getPermitNumber())
+                .geographicCoverage(source.getGeographicCoverage())
+                .notes(source.getNotes())
+                .vehicleTypes(new ArrayList<>(source.getVehicleTypes()))
+                .preferredClients(new ArrayList<>(source.getPreferredClients()))
+                .version(source.getVersion())
+                .createdAt(source.getCreatedAt())
+                .createdBy(source.getCreatedBy())
+                .build();
+    }
+
     private void logAuditChange(String username, String action, UUID entityId, CarrierEntity before, CarrierEntity after) {
         try {
             UserEntity actor = userRepositoryPort.findByUsername(username).orElse(null);
@@ -171,10 +224,21 @@ public class CarrierService implements CarrierUseCase {
         state.put("name", entity.getName());
         state.put("tradeName", entity.getTradeName());
         state.put("taxId", entity.getTaxId());
+        state.put("carrierType", entity.getCarrierType() != null ? entity.getCarrierType().name() : null);
+        state.put("status", entity.getStatus() != null ? entity.getStatus().name() : null);
         state.put("contactName", entity.getContactName());
         state.put("contactPhone", entity.getContactPhone());
         state.put("contactEmail", entity.getContactEmail());
-        state.put("status", entity.getStatus() != null ? entity.getStatus().name() : null);
+        state.put("serviceType", entity.getServiceType() != null ? entity.getServiceType().name() : null);
+        state.put("permitNumber", entity.getPermitNumber());
+        state.put("geographicCoverage", entity.getGeographicCoverage());
+        state.put("notes", entity.getNotes());
+        state.put("vehicleTypes", new ArrayList<>(entity.getVehicleTypes()));
+        if (entity.getPreferredClients() != null) {
+            state.put("preferredClients", entity.getPreferredClients().stream()
+                    .map(c -> Map.of("id", c.getId().toString(), "name", c.getName()))
+                    .collect(Collectors.toList()));
+        }
         state.put("organizationId", entity.getOrganization() != null ? entity.getOrganization().getId().toString() : null);
         return state;
     }

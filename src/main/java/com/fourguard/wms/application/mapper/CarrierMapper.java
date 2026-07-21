@@ -4,7 +4,10 @@ import com.fourguard.wms.application.dto.request.CreateCarrierRequest;
 import com.fourguard.wms.application.dto.request.UpdateCarrierRequest;
 import com.fourguard.wms.application.dto.response.CarrierResponse;
 import com.fourguard.wms.domain.enums.CarrierStatus;
+import com.fourguard.wms.domain.enums.CarrierType;
+import com.fourguard.wms.domain.enums.ServiceType;
 import com.fourguard.wms.infrastructure.persistence.entity.CarrierEntity;
+import com.fourguard.wms.infrastructure.persistence.entity.ClientEntity;
 import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
@@ -18,6 +21,9 @@ public interface CarrierMapper {
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "carrierType", source = "carrierType")
+    @Mapping(target = "serviceType", source = "serviceType")
+    @Mapping(target = "preferredClients", ignore = true)
     CarrierEntity toEntity(CreateCarrierRequest request);
 
     @AfterMapping
@@ -36,7 +42,13 @@ public interface CarrierMapper {
 
     @Mapping(source = "organization.id", target = "organizationId")
     @Mapping(source = "organization.name", target = "organizationName")
+    @Mapping(source = "carrierType", target = "carrierType")
+    @Mapping(source = "serviceType", target = "serviceType")
     CarrierResponse toResponse(CarrierEntity entity);
+
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "name", target = "name")
+    CarrierResponse.PreferredClientResponse toPreferredClientResponse(ClientEntity client);
 
     @Mapping(target = "organization", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -45,6 +57,9 @@ public interface CarrierMapper {
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "carrierType", source = "carrierType")
+    @Mapping(target = "serviceType", source = "serviceType")
+    @Mapping(target = "preferredClients", ignore = true)
     void updateEntityFromDto(UpdateCarrierRequest request, @MappingTarget CarrierEntity entity);
 
     @AfterMapping
@@ -57,6 +72,24 @@ public interface CarrierMapper {
         }
         if (request.getVersion() != null) {
             entity.setVersion(request.getVersion());
+        }
+    }
+
+    default CarrierType mapCarrierType(String value) {
+        if (value == null) return CarrierType.EXTERNAL;
+        try {
+            return CarrierType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return CarrierType.EXTERNAL;
+        }
+    }
+
+    default ServiceType mapServiceType(String value) {
+        if (value == null) return ServiceType.FTL;
+        try {
+            return ServiceType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ServiceType.FTL;
         }
     }
 }
