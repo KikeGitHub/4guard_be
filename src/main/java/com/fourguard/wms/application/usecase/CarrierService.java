@@ -3,11 +3,13 @@ package com.fourguard.wms.application.usecase;
 import com.fourguard.wms.application.dto.request.CreateCarrierRequest;
 import com.fourguard.wms.application.dto.request.UpdateCarrierRequest;
 import com.fourguard.wms.application.dto.response.CarrierResponse;
+import com.fourguard.wms.application.dto.response.audit.CarrierAuditResponse;
 import com.fourguard.wms.application.mapper.CarrierMapper;
 import com.fourguard.wms.domain.enums.CarrierStatus;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
 import com.fourguard.wms.domain.exception.ValidationException;
 import com.fourguard.wms.domain.ports.in.CarrierUseCase;
+import com.fourguard.wms.domain.ports.out.AuditLogRepositoryPort;
 import com.fourguard.wms.domain.ports.out.CarrierRepositoryPort;
 import com.fourguard.wms.domain.ports.out.OrganizationRepositoryPort;
 import com.fourguard.wms.domain.ports.out.UserRepositoryPort;
@@ -42,6 +44,7 @@ public class CarrierService implements CarrierUseCase {
     private final CarrierMapper carrierMapper;
     private final SecurityAuditHelper securityAuditHelper;
     private final AuditService auditService;
+    private final AuditLogRepositoryPort auditLogRepositoryPort;
 
     @Override
     @Transactional
@@ -178,6 +181,87 @@ public class CarrierService implements CarrierUseCase {
         logAuditChange(currentUser, "CARRIER_DELETED", id, existing, null);
 
         carrierRepositoryPort.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public CarrierResponse updateCarrierStatus(UUID id, com.fourguard.wms.application.dto.request.UpdateCarrierStatusRequest request) {
+        CarrierStatus newStatus;
+        try {
+            newStatus = CarrierStatus.valueOf(request.getStatus().toUpperCase());
+        } catch (Exception e) {
+            throw new ValidationException("Estado inválido: " + request.getStatus());
+        }
+
+        log.info("Updating status for carrier: {} to {}", id, newStatus);
+        CarrierEntity existing = carrierRepositoryPort.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Transportista no encontrado con ID: " + id));
+
+        CarrierEntity originalSnapshot = cloneCarrierEntity(existing);
+        existing.setStatus(newStatus);
+
+        String currentUser = securityAuditHelper.getCurrentUsername();
+        existing.setUpdatedBy(currentUser);
+
+        CarrierEntity saved = carrierRepositoryPort.save(existing);
+
+        Map<String, Object> beforeState = buildAuditState(originalSnapshot);
+        Map<String, Object> afterState = buildAuditState(saved);
+        if (request.getReason() != null && !request.getReason().isBlank()) {
+            afterState.put("reason", request.getReason());
+        }
+        if (request.getObservations() != null && !request.getObservations().isBlank()) {
+            afterState.put("observations", request.getObservations());
+        }
+
+        try {
+            UserEntity actor = userRepositoryPort.findByUsername(currentUser).orElse(null);
+            if (actor != null) {
+                auditService.log(actor, "CARRIER_STATUS_UPDATED", "CARRIER", saved.getId(), beforeState, afterState);
+            }
+        } catch (Exception e) {
+            log.error("Failed to persist status update audit log", e);
+        }
+
+        return carrierMapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CarrierAuditResponse> getCarrierAuditLogs(UUID id) {
+        log.debug("Fetching audit logs for carrier: {}", id);
+        if (!carrierRepositoryPort.findById(id).isPresent()) {
+            throw new EntityNotFoundException("Transportista no encontrado con ID: " + id);
+        }
+
+        List<com.fourguard.wms.infrastructure.persistence.entity.AuditLogEntity> logs = 
+                auditLogRepositoryPort.findByEntityTypeAndEntityId("CARRIER", id);
+
+        return logs.stream()
+                .map(logEntry -> {
+                    String username = "SYSTEM";
+                    if (logEntry.getUserId() != null) {
+                        username = userRepositoryPort.findById(logEntry.getUserId())
+                                .map(UserEntity::getUsername)
+                                .orElse("UNKNOWN");
+                    }
+                    List<CarrierAuditResponse.AuditDetailResponse> detailResponses = logEntry.getDetails().stream()
+                            .map(d -> CarrierAuditResponse.AuditDetailResponse.builder()
+                                    .fieldName(d.getFieldName())
+                                    .oldValue(d.getOldValue())
+                                    .newValue(d.getNewValue())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    return CarrierAuditResponse.builder()
+                            .logId(logEntry.getLogId())
+                            .action(logEntry.getAction())
+                            .username(username)
+                            .createdAt(logEntry.getCreatedAt())
+                            .details(detailResponses)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     private CarrierEntity cloneCarrierEntity(CarrierEntity source) {

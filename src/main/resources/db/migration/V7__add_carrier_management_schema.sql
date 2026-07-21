@@ -32,8 +32,8 @@ CREATE TABLE wms.carriers (
 
     UNIQUE (organization_id, name),
     CONSTRAINT chk_carrier_status CHECK (status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED')),
-    CONSTRAINT chk_carrier_type   CHECK (carrier_type IN ('INTERNAL', 'EXTERNAL', 'DEDICATED')),
-    CONSTRAINT chk_service_type   CHECK (service_type IN ('FTL', 'LTL', 'PARCEL', 'LOCAL')),
+    CONSTRAINT chk_carrier_type   CHECK (carrier_type IN ('EXTERNAL', 'CLIENT_TRANSPORT', 'OWN_TRANSPORT', 'THIRD_PARTY_3PL', 'PARCEL')),
+    CONSTRAINT chk_service_type   CHECK (service_type IN ('FTL', 'LTL', 'PARCEL', 'INTERMODAL', 'LAST_MILE', 'DEDICATED')),
     CONSTRAINT chk_carrier_name   CHECK (char_length(name) >= 2),
     CONSTRAINT chk_carrier_phone  CHECK (char_length(contact_phone) >= 7)
 );

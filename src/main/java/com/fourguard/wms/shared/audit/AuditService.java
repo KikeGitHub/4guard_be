@@ -1,6 +1,7 @@
 package com.fourguard.wms.shared.audit;
 
 import com.fourguard.wms.domain.ports.out.AuditLogRepositoryPort;
+import com.fourguard.wms.infrastructure.persistence.entity.AuditLogDetailEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.AuditLogEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,8 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -19,8 +19,9 @@ public class AuditService {
     private final AuditLogRepositoryPort auditLogRepositoryPort;
 
     /**
-     * Persists an audit log entry in the database.
-     * Automatically extracts IP Address and User-Agent from the request context.
+     * Persists a relational audit log entry without JSONB.
+     * Automatically extracts IP Address and User-Agent from the request context
+     * and calculates field-by-field differences.
      */
     public void log(UserEntity actor, String action, String entityType, UUID entityId, 
                     Map<String, Object> beforeState, Map<String, Object> afterState) {
@@ -46,12 +47,38 @@ public class AuditService {
                 .action(action)
                 .entityType(entityType)
                 .entityId(entityId)
-                .beforeState(beforeState)
-                .afterState(afterState)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .build();
 
+        List<AuditLogDetailEntity> details = buildDetails(logEntry, beforeState, afterState);
+        logEntry.setDetails(details);
+
         auditLogRepositoryPort.log(logEntry);
+    }
+
+    private List<AuditLogDetailEntity> buildDetails(AuditLogEntity logEntry, Map<String, Object> before, Map<String, Object> after) {
+        List<AuditLogDetailEntity> details = new ArrayList<>();
+        Set<String> allKeys = new HashSet<>();
+        if (before != null) allKeys.addAll(before.keySet());
+        if (after != null) allKeys.addAll(after.keySet());
+
+        for (String key : allKeys) {
+            Object oldVal = before != null ? before.get(key) : null;
+            Object newVal = after != null ? after.get(key) : null;
+
+            String oldStr = oldVal != null ? String.valueOf(oldVal) : null;
+            String newStr = newVal != null ? String.valueOf(newVal) : null;
+
+            if (!Objects.equals(oldStr, newStr)) {
+                details.add(AuditLogDetailEntity.builder()
+                        .log(logEntry)
+                        .fieldName(key)
+                        .oldValue(oldStr)
+                        .newValue(newStr)
+                        .build());
+            }
+        }
+        return details;
     }
 }
