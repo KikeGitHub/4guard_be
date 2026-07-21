@@ -12,7 +12,7 @@ WORKDIR /app
 
 COPY --from=builder /app/target/*.jar app.jar
 
-ENV JAVA_OPTS=""
+ENV JAVA_OPTS="-Xms150m -Xmx220m -Xss256k -XX:+UseSerialGC -XX:MaxMetaspaceSize=120m -XX:ReservedCodeCacheSize=80m"
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-8080} -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
