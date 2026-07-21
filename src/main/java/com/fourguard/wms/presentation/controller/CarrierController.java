@@ -3,6 +3,8 @@ package com.fourguard.wms.presentation.controller;
 import com.fourguard.wms.application.dto.request.CreateCarrierRequest;
 import com.fourguard.wms.application.dto.request.UpdateCarrierRequest;
 import com.fourguard.wms.application.dto.response.CarrierResponse;
+import com.fourguard.wms.application.dto.response.audit.CarrierAuditResponse;
+import com.fourguard.wms.domain.enums.CarrierStatus;
 import com.fourguard.wms.domain.ports.in.CarrierUseCase;
 import com.fourguard.wms.shared.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -99,5 +101,36 @@ public class CarrierController {
     public ResponseEntity<ApiResponse<Void>> deleteCarrier(@PathVariable UUID id) {
         carrierUseCase.deleteCarrier(id);
         return ResponseEntity.ok(ApiResponse.ok("Transportista eliminado con éxito"));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('CARRIERS_UPDATE') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Actualizar estado de transportista", description = "Cambia el estado operativo de un transportista (ACTIVE, INACTIVE, SUSPENDED).")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Estado actualizado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Estado inválido o petición incorrecta"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Transportista no encontrado")
+    })
+    public ResponseEntity<ApiResponse<CarrierResponse>> updateCarrierStatus(
+            @PathVariable UUID id,
+            @RequestParam CarrierStatus status) {
+        CarrierResponse response = carrierUseCase.updateCarrierStatus(id, status);
+        return ResponseEntity.ok(ApiResponse.ok("Estado del transportista actualizado con éxito", response));
+    }
+
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasAuthority('CARRIERS_READ') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Obtener historial de auditoría", description = "Devuelve todo el historial cronológico de cambios de un transportista específico.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Historial de auditoría recuperado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Transportista no encontrado")
+    })
+    public ResponseEntity<ApiResponse<List<CarrierAuditResponse>>> getCarrierAuditLogs(@PathVariable UUID id) {
+        List<CarrierAuditResponse> response = carrierUseCase.getCarrierAuditLogs(id);
+        return ResponseEntity.ok(ApiResponse.ok("Historial de auditoría recuperado con éxito", response));
     }
 }
