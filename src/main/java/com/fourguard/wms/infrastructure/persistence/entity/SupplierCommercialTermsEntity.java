@@ -40,7 +40,7 @@ public class SupplierCommercialTermsEntity {
      */
     @Column(name = "lead_time_days", nullable = false)
     @Builder.Default
-    private Integer leadTimeDays = 0;
+    private Short leadTimeDays = 0;
 
     @Column(name = "minimum_order_amount", nullable = false, precision = 14, scale = 2)
     @Builder.Default
@@ -48,7 +48,7 @@ public class SupplierCommercialTermsEntity {
 
     @Column(name = "credit_days", nullable = false)
     @Builder.Default
-    private Integer creditDays = 0;
+    private Short creditDays = 0;
 
     /** ISO 4217 currency code. FK → wms.cat_currencies.code. */
     @Column(name = "currency_code", length = 3, nullable = false)
