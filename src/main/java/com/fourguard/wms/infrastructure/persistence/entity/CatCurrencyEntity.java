@@ -22,7 +22,8 @@ import java.time.ZoneOffset;
 public class CatCurrencyEntity {
 
     @Id
-    @Column(name = "code", columnDefinition = "CHAR(3)", nullable = false, updatable = false)
+    @Column(name = "code", length = 3, nullable = false, updatable = false)
+    @org.hibernate.annotations.JdbcTypeCode(java.sql.Types.CHAR)
     private String code;
 
     @Column(name = "label", length = 60, nullable = false)

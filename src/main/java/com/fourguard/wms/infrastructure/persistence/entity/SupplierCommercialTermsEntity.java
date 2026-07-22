@@ -51,7 +51,8 @@ public class SupplierCommercialTermsEntity {
     private Integer creditDays = 0;
 
     /** ISO 4217 currency code. FK → wms.cat_currencies.code. */
-    @Column(name = "currency_code", columnDefinition = "CHAR(3)", nullable = false)
+    @Column(name = "currency_code", length = 3, nullable = false)
+    @org.hibernate.annotations.JdbcTypeCode(java.sql.Types.CHAR)
     @Builder.Default
     private String currencyCode = "MXN";
 
