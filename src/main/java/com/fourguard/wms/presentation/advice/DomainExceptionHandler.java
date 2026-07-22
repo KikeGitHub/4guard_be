@@ -2,8 +2,10 @@ package com.fourguard.wms.presentation.advice;
 
 import com.fourguard.wms.domain.exception.AccountPermanentlyLockedException;
 import com.fourguard.wms.domain.exception.AccountTemporarilyLockedException;
+import com.fourguard.wms.domain.exception.ConflictException;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
 import com.fourguard.wms.domain.exception.InvalidCredentialsException;
+import com.fourguard.wms.domain.exception.InvalidFsmTransitionException;
 import com.fourguard.wms.domain.exception.TokenExpiredException;
 import com.fourguard.wms.domain.exception.ValidationException;
 import com.fourguard.wms.shared.response.ApiResponse;
@@ -50,6 +52,32 @@ public class DomainExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleValidation(ValidationException ex) {
         log.warn("[VALIDATION-ERROR] Domain validation failed: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    // ── FSM Transition ────────────────────────────────────────────────────────
+
+    /**
+     * HTTP 422 — the requested FSM state transition is not permitted by business rules.
+     * E.g. BLOCKED → MAINTENANCE or INACTIVE → BLOCKED.
+     */
+    @ExceptionHandler(InvalidFsmTransitionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidFsmTransition(InvalidFsmTransitionException ex) {
+        log.warn("[FSM-ERROR] Invalid FSM transition: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    // ── Business Conflict ─────────────────────────────────────────────────────
+
+    /**
+     * HTTP 409 — a business conflict prevents the operation.
+     * E.g. duplicate location code, or location has active inventory.
+     */
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException ex) {
+        log.warn("[CONFLICT] Business conflict: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(ex.getMessage()));
     }
 

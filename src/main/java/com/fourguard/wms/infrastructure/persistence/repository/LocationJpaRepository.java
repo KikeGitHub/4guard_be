@@ -12,4 +12,8 @@ public interface LocationJpaRepository extends JpaRepository<LocationEntity, UUI
     List<LocationEntity> findByBranchId(UUID branchId);
     List<LocationEntity> findBySectionId(UUID sectionId);
     List<LocationEntity> findByBranchIdAndIsBlockedFalse(UUID branchId);
+
+    /** Checks whether another location (different ID) already uses the given code. */
+    boolean existsByCodeAndIdNot(String code, UUID id);
 }
+

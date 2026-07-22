@@ -21,4 +21,9 @@ public class LocationPersistenceAdapter implements LocationRepositoryPort {
     @Override public LocationEntity           save(LocationEntity l)           { return repository.save(l); }
     @Override public void                     deleteById(UUID id)              { repository.deleteById(id); }
     @Override public List<LocationEntity>     findAll()                        { return repository.findAll(); }
+
+    @Override public boolean existsByCodeAndIdNot(String code, UUID excludeId) {
+        return repository.existsByCodeAndIdNot(code, excludeId);
+    }
 }
+

@@ -1,5 +1,6 @@
 package com.fourguard.wms.infrastructure.persistence.entity;
 
+import com.fourguard.wms.domain.enums.LocationStatus;
 import com.fourguard.wms.domain.enums.LocationType;
 import com.fourguard.wms.shared.audit.BaseVersionedEntity;
 import jakarta.persistence.*;
@@ -65,6 +66,28 @@ public class LocationEntity extends BaseVersionedEntity {
     @Builder.Default
     private Integer currentOccupancy = 0;
 
+    // ── New FSM fields ──────────────────────────────────────────────────────
+
+    /** Human-readable unique code, e.g. "ALMC-A-R1-N2". */
+    @Column(name = "code", length = 30, unique = true)
+    private String code;
+
+    /** Descriptive name, e.g. "Pasillo A – Rack 1 – Nivel 2". */
+    @Column(name = "name", length = 150)
+    private String name;
+
+    /** FSM operational status. Defaults to ACTIVE. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private LocationStatus status = LocationStatus.ACTIVE;
+
+    /** Reason for the last status change. Required for BLOCKED and MAINTENANCE. */
+    @Column(name = "status_reason", length = 300)
+    private String statusReason;
+
+    // ── Legacy fields — kept in sync via DB trigger ─────────────────────────
+
     @Column(name = "is_blocked")
     @Builder.Default
     private Boolean isBlocked = false;
@@ -72,3 +95,4 @@ public class LocationEntity extends BaseVersionedEntity {
     @Column(name = "block_reason", columnDefinition = "TEXT")
     private String blockReason;
 }
+
