@@ -44,12 +44,18 @@ public class CreateSupplierRequest {
     @Schema(description = "Alcance 3PL: GLOBAL | CLIENT | WAREHOUSE", example = "GLOBAL")
     String scopeType;
 
-    @Schema(description = "UUID del cliente (requerido si scopeType=CLIENT)")
-    UUID clientId;
+    @Schema(description = "UUID o Código del cliente (requerido si scopeType=CLIENT)")
+    String clientId;
+
+    @Schema(description = "Nombre del cliente (opcional, usado para auto-creación en pruebas/demos)")
+    String clientName;
 
     /** Maps to branch_id in BD. Named warehouseId for FE compatibility. */
-    @Schema(description = "UUID del branch/almacén (requerido si scopeType=WAREHOUSE). Alias de branchId.", example = "uuid")
-    UUID warehouseId;
+    @Schema(description = "UUID o Código del branch/almacén (requerido si scopeType=WAREHOUSE). Alias de branchId.", example = "uuid")
+    String warehouseId;
+
+    @Schema(description = "Nombre del almacén/branch (opcional, usado para auto-creación en pruebas/demos)")
+    String warehouseName;
 
     @Size(max = 2000, message = "Las notas no pueden superar 2000 caracteres")
     @Schema(description = "Notas operativas del proveedor")

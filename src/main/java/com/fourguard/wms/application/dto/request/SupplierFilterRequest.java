@@ -29,12 +29,12 @@ public class SupplierFilterRequest {
     @Schema(description = "UUID de la organización (requerido internamente en el servicio)")
     UUID organizationId;
 
-    @Schema(description = "UUID del cliente para filtrar por scope=CLIENT")
-    UUID clientId;
+    @Schema(description = "UUID o Código del cliente para filtrar por scope=CLIENT")
+    String clientId;
 
     /** Maps to branch_id in the DB. Named warehouseId for FE compatibility. */
-    @Schema(description = "UUID del branch/almacén para filtrar por scope=WAREHOUSE (alias de branchId)")
-    UUID warehouseId;
+    @Schema(description = "UUID o Código del branch/almacén para filtrar por scope=WAREHOUSE (alias de branchId)")
+    String warehouseId;
 
     @Schema(description = "Si true, retorna solo proveedores preferentes", example = "true")
     Boolean preferredOnly;

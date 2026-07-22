@@ -74,7 +74,7 @@ public class SupplierService implements SupplierUseCase {
         entity.setIsDeleted(false);
 
         // Resolve scope dependencies
-        resolveScopeDependencies(entity, request.getScopeType(), request.getClientId(), request.getWarehouseId());
+        resolveScopeDependencies(entity, request.getScopeType(), request.getClientId(), request.getClientName(), request.getWarehouseId(), request.getWarehouseName());
 
         // Build and attach 1:1 relations
         String currentUser = securityAuditHelper.getCurrentUsername();
@@ -125,7 +125,7 @@ public class SupplierService implements SupplierUseCase {
         supplierMapper.updateEntityFromDto(request, existing);
 
         // Re-resolve scope
-        resolveScopeDependencies(existing, request.getScopeType(), request.getClientId(), request.getWarehouseId());
+        resolveScopeDependencies(existing, request.getScopeType(), request.getClientId(), request.getClientName(), request.getWarehouseId(), request.getWarehouseName());
 
         // Update 1:1 relations in-place
         if (request.getContact() != null) {
@@ -181,7 +181,20 @@ public class SupplierService implements SupplierUseCase {
     @Transactional(readOnly = true)
     public Page<SupplierSummaryResponse> getSuppliers(SupplierFilterRequest filter, Pageable pageable) {
         log.debug("Querying suppliers with filter: {}", filter);
-        Specification<SupplierEntity> spec = SupplierSpecification.fromFilter(filter);
+
+        UUID clientUuid = null;
+        if (filter.getClientId() != null && !filter.getClientId().isBlank()) {
+            ClientEntity client = resolveClient(filter.getOrganizationId(), filter.getClientId(), null);
+            clientUuid = (client != null) ? client.getId() : UUID.randomUUID(); // force mismatch if not found
+        }
+
+        UUID warehouseUuid = null;
+        if (filter.getWarehouseId() != null && !filter.getWarehouseId().isBlank()) {
+            BranchEntity branch = resolveBranch(filter.getOrganizationId(), filter.getWarehouseId(), null);
+            warehouseUuid = (branch != null) ? branch.getId() : UUID.randomUUID(); // force mismatch if not found
+        }
+
+        Specification<SupplierEntity> spec = SupplierSpecification.fromFilter(filter, clientUuid, warehouseUuid);
         return supplierRepositoryPort.findAll(spec, pageable)
                 .map(entity -> {
                     SupplierSummaryResponse summary = supplierMapper.toSummaryResponse(entity);
@@ -327,7 +340,7 @@ public class SupplierService implements SupplierUseCase {
      * Resolves client and branch references based on scopeType.
      * warehouseId from FE maps to branch_id in the DB (wms.branches).
      */
-    private void resolveScopeDependencies(SupplierEntity entity, String scopeTypeStr, UUID clientId, UUID warehouseId) {
+    private void resolveScopeDependencies(SupplierEntity entity, String scopeTypeStr, String clientId, String clientName, String warehouseId, String warehouseName) {
         SupplierScopeType scopeType;
         try {
             scopeType = SupplierScopeType.valueOf(scopeTypeStr.toUpperCase());
@@ -336,18 +349,24 @@ public class SupplierService implements SupplierUseCase {
         }
         entity.setScopeType(scopeType);
 
+        UUID orgId = entity.getOrganization().getId();
+
         switch (scopeType) {
             case CLIENT -> {
-                if (clientId == null) throw new ValidationException("clientId es requerido cuando scopeType = CLIENT");
-                ClientEntity client = clientJpaRepository.findById(clientId)
-                        .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado: " + clientId));
+                if (clientId == null || clientId.isBlank()) throw new ValidationException("clientId es requerido cuando scopeType = CLIENT");
+                ClientEntity client = resolveClient(orgId, clientId, clientName);
+                if (client == null) {
+                    throw new EntityNotFoundException("Cliente no encontrado con ID o Código: " + clientId);
+                }
                 entity.setClient(client);
                 entity.setBranch(null);
             }
             case WAREHOUSE -> {
-                if (warehouseId == null) throw new ValidationException("warehouseId (branchId) es requerido cuando scopeType = WAREHOUSE");
-                BranchEntity branch = branchJpaRepository.findById(warehouseId)
-                        .orElseThrow(() -> new EntityNotFoundException("Branch/Almacén no encontrado: " + warehouseId));
+                if (warehouseId == null || warehouseId.isBlank()) throw new ValidationException("warehouseId (branchId) es requerido cuando scopeType = WAREHOUSE");
+                BranchEntity branch = resolveBranch(orgId, warehouseId, warehouseName);
+                if (branch == null) {
+                    throw new EntityNotFoundException("Branch/Almacén no encontrado con ID o Código: " + warehouseId);
+                }
                 entity.setBranch(branch);
                 entity.setClient(null);
             }
@@ -420,5 +439,59 @@ public class SupplierService implements SupplierUseCase {
         return userJpaRepository.findById(userId)
                 .map(UserEntity::getUsername)
                 .orElse("UNKNOWN");
+    }
+
+    private BranchEntity resolveBranch(UUID orgId, String warehouseIdStr, String warehouseName) {
+        if (warehouseIdStr == null || warehouseIdStr.isBlank()) return null;
+        try {
+            UUID branchId = UUID.fromString(warehouseIdStr.trim());
+            return branchJpaRepository.findById(branchId).orElse(null);
+        } catch (IllegalArgumentException e) {
+            Optional<BranchEntity> branchOpt = branchJpaRepository.findByOrganizationIdAndCode(orgId, warehouseIdStr.trim());
+            if (branchOpt.isPresent()) {
+                return branchOpt.get();
+            }
+
+            // Auto-create branch for demo/frontend compatibility
+            String name = (warehouseName != null && !warehouseName.isBlank()) ? warehouseName : "Branch " + warehouseIdStr;
+            log.info("Branch with code '{}' not found. Auto-creating branch '{}' for demo/integration compatibility.", warehouseIdStr, name);
+            
+            OrganizationEntity org = new OrganizationEntity();
+            org.setId(orgId);
+
+            BranchEntity newBranch = BranchEntity.builder()
+                    .organization(org)
+                    .code(warehouseIdStr.trim())
+                    .name(name)
+                    .build();
+            return branchJpaRepository.save(newBranch);
+        }
+    }
+
+    private ClientEntity resolveClient(UUID orgId, String clientIdStr, String clientName) {
+        if (clientIdStr == null || clientIdStr.isBlank()) return null;
+        try {
+            UUID clientId = UUID.fromString(clientIdStr.trim());
+            return clientJpaRepository.findById(clientId).orElse(null);
+        } catch (IllegalArgumentException e) {
+            Optional<ClientEntity> clientOpt = clientJpaRepository.findByOrganizationIdAndExternalId(orgId, clientIdStr.trim());
+            if (clientOpt.isPresent()) {
+                return clientOpt.get();
+            }
+
+            // Auto-create client for demo/frontend compatibility
+            String name = (clientName != null && !clientName.isBlank()) ? clientName : "Cliente " + clientIdStr;
+            log.info("Client with code '{}' not found. Auto-creating client '{}' for demo/integration compatibility.", clientIdStr, name);
+
+            OrganizationEntity org = new OrganizationEntity();
+            org.setId(orgId);
+
+            ClientEntity newClient = ClientEntity.builder()
+                    .organization(org)
+                    .name(name)
+                    .externalId(clientIdStr.trim())
+                    .build();
+            return clientJpaRepository.save(newClient);
+        }
     }
 }

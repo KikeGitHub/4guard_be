@@ -21,7 +21,7 @@ public class SupplierSpecification {
      * Builds a combined Specification from the given filter request.
      * Every predicate is ANDed together.
      */
-    public static Specification<SupplierEntity> fromFilter(SupplierFilterRequest filter) {
+    public static Specification<SupplierEntity> fromFilter(SupplierFilterRequest filter, UUID resolvedClientUuid, UUID resolvedWarehouseUuid) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -51,13 +51,13 @@ public class SupplierSpecification {
             }
 
             // Client filter (scope=CLIENT)
-            if (filter.getClientId() != null) {
-                predicates.add(cb.equal(root.get("client").get("id"), filter.getClientId()));
+            if (resolvedClientUuid != null) {
+                predicates.add(cb.equal(root.get("client").get("id"), resolvedClientUuid));
             }
 
             // Warehouse/Branch filter (scope=WAREHOUSE). warehouseId maps to branch_id.
-            if (filter.getWarehouseId() != null) {
-                predicates.add(cb.equal(root.get("branch").get("id"), filter.getWarehouseId()));
+            if (resolvedWarehouseUuid != null) {
+                predicates.add(cb.equal(root.get("branch").get("id"), resolvedWarehouseUuid));
             }
 
             // Preferred only filter
