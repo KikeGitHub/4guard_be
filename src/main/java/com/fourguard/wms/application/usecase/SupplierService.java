@@ -456,8 +456,8 @@ public class SupplierService implements SupplierUseCase {
             String name = (warehouseName != null && !warehouseName.isBlank()) ? warehouseName : "Branch " + warehouseIdStr;
             log.info("Branch with code '{}' not found. Auto-creating branch '{}' for demo/integration compatibility.", warehouseIdStr, name);
             
-            OrganizationEntity org = new OrganizationEntity();
-            org.setId(orgId);
+            OrganizationEntity org = organizationJpaRepository.findById(orgId)
+                    .orElseThrow(() -> new EntityNotFoundException("Organización no encontrada: " + orgId));
 
             BranchEntity newBranch = BranchEntity.builder()
                     .organization(org)
@@ -483,8 +483,8 @@ public class SupplierService implements SupplierUseCase {
             String name = (clientName != null && !clientName.isBlank()) ? clientName : "Cliente " + clientIdStr;
             log.info("Client with code '{}' not found. Auto-creating client '{}' for demo/integration compatibility.", clientIdStr, name);
 
-            OrganizationEntity org = new OrganizationEntity();
-            org.setId(orgId);
+            OrganizationEntity org = organizationJpaRepository.findById(orgId)
+                    .orElseThrow(() -> new EntityNotFoundException("Organización no encontrada: " + orgId));
 
             ClientEntity newClient = ClientEntity.builder()
                     .organization(org)
