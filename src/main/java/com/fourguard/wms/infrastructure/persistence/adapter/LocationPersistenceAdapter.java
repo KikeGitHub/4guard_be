@@ -19,11 +19,12 @@ public class LocationPersistenceAdapter implements LocationRepositoryPort {
     @Override public List<LocationEntity>     findByBranchId(UUID bid)         { return repository.findByBranchId(bid); }
     @Override public List<LocationEntity>     findAvailableByBranchId(UUID bid){ return repository.findByBranchIdAndIsBlockedFalse(bid); }
     @Override public LocationEntity           save(LocationEntity l)           { return repository.save(l); }
-    @Override public void                     deleteById(UUID id)              { repository.deleteById(id); }
     @Override public List<LocationEntity>     findAll()                        { return repository.findAll(); }
+    @Override public List<LocationEntity>     findBySectionId(UUID sid)        { return repository.findBySectionId(sid); }
 
     @Override public boolean existsByCodeAndIdNot(String code, UUID excludeId) {
         return repository.existsByCodeAndIdNot(code, excludeId);
     }
 }
+
 

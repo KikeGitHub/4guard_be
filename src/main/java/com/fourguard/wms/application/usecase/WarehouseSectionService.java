@@ -12,8 +12,10 @@ import com.fourguard.wms.domain.ports.out.AuditLogRepositoryPort;
 import com.fourguard.wms.domain.ports.out.BranchRepositoryPort;
 import com.fourguard.wms.domain.ports.out.UserRepositoryPort;
 import com.fourguard.wms.domain.ports.out.WarehouseSectionRepositoryPort;
+import com.fourguard.wms.domain.ports.out.LocationRepositoryPort;
 import com.fourguard.wms.infrastructure.persistence.entity.AuditLogEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.BranchEntity;
+import com.fourguard.wms.infrastructure.persistence.entity.LocationEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.WarehouseSectionEntity;
 import com.fourguard.wms.shared.audit.AuditService;
@@ -38,9 +40,11 @@ public class WarehouseSectionService implements WarehouseSectionUseCase {
     private final BranchRepositoryPort branchRepositoryPort;
     private final UserRepositoryPort userRepositoryPort;
     private final AuditLogRepositoryPort auditLogRepositoryPort;
+    private final LocationRepositoryPort locationRepositoryPort;
     private final WarehouseSectionMapper sectionMapper;
     private final SecurityAuditHelper securityAuditHelper;
     private final AuditService auditService;
+
 
     @Override
     @Transactional
@@ -155,17 +159,32 @@ public class WarehouseSectionService implements WarehouseSectionUseCase {
     @Override
     @Transactional
     public void deleteWarehouseSection(UUID id) {
-        log.info("Deleting warehouse section with ID: {}", id);
+        log.info("Logical delete and cascade for warehouse section ID: {}", id);
         WarehouseSectionEntity existing = sectionRepositoryPort.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Sección no encontrada con ID: " + id));
 
+        WarehouseSectionEntity originalSnapshot = cloneEntity(existing);
         String currentUser = securityAuditHelper.getCurrentUsername();
 
-        // Log delete audit
-        logAuditChange(currentUser, "SECTION_DELETED", id, existing, null);
+        // 1. Cascada: Desasociar ubicaciones vinculadas a esta sección
+        List<LocationEntity> associatedLocations = locationRepositoryPort.findBySectionId(id);
+        if (!associatedLocations.isEmpty()) {
+            log.info("Unlinking {} locations from section ID: {}", associatedLocations.size(), id);
+            for (LocationEntity location : associatedLocations) {
+                location.setSection(null);
+                locationRepositoryPort.save(location);
+            }
+        }
 
-        sectionRepositoryPort.deleteById(id);
+        // 2. Borrado Lógico: Marcar estatus como INACTIVE
+        existing.setStatus(WarehouseSectionStatus.INACTIVE);
+        existing.setUpdatedBy(currentUser);
+        WarehouseSectionEntity saved = sectionRepositoryPort.save(existing);
+
+        // 3. Bitácora de Auditoría
+        logAuditChange(currentUser, "SECTION_DELETED", id, originalSnapshot, saved);
     }
+
 
     @Override
     @Transactional(readOnly = true)
