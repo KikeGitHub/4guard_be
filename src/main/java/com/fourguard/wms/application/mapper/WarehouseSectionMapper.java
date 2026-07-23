@@ -27,6 +27,7 @@ public interface WarehouseSectionMapper {
 
     @Mapping(target = "branch", ignore = true)
     @Mapping(target = "locations", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
@@ -34,4 +35,5 @@ public interface WarehouseSectionMapper {
     @Mapping(target = "version", ignore = true)
     void updateEntityFromDto(UpdateWarehouseSectionRequest request, @MappingTarget WarehouseSectionEntity entity);
 }
+
 

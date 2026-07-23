@@ -88,6 +88,8 @@ public class WarehouseSectionService implements WarehouseSectionUseCase {
 
         if (request.getStatus() != null) {
             existing.setStatus(request.getStatus());
+        } else if (existing.getStatus() == null) {
+            existing.setStatus(WarehouseSectionStatus.ACTIVE);
         }
 
         String currentUser = securityAuditHelper.getCurrentUsername();
