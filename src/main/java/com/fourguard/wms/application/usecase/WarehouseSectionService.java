@@ -102,6 +102,28 @@ public class WarehouseSectionService implements WarehouseSectionUseCase {
     }
 
     @Override
+    @Transactional
+    public WarehouseSectionResponse updateWarehouseSectionStatus(UUID id, com.fourguard.wms.application.dto.request.UpdateWarehouseSectionStatusRequest request) {
+        log.info("Updating status for warehouse section ID={} to {}", id, request.getStatus());
+        WarehouseSectionEntity existing = sectionRepositoryPort.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Sección no encontrada con ID: " + id));
+
+        WarehouseSectionEntity originalSnapshot = cloneEntity(existing);
+        existing.setStatus(request.getStatus());
+
+        String currentUser = securityAuditHelper.getCurrentUsername();
+        existing.setUpdatedBy(currentUser);
+
+        WarehouseSectionEntity saved = sectionRepositoryPort.save(existing);
+
+        // Audit log with action "SECTION_STATUS_UPDATED"
+        logAuditChange(currentUser, "SECTION_STATUS_UPDATED", saved.getId(), originalSnapshot, saved);
+
+        return sectionMapper.toResponse(saved);
+    }
+
+
+    @Override
     @Transactional(readOnly = true)
     public WarehouseSectionResponse getWarehouseSectionById(UUID id) {
         log.debug("Fetching warehouse section with ID: {}", id);

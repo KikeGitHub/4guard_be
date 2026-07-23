@@ -2,6 +2,7 @@ package com.fourguard.wms.presentation.controller;
 
 import com.fourguard.wms.application.dto.request.CreateWarehouseSectionRequest;
 import com.fourguard.wms.application.dto.request.UpdateWarehouseSectionRequest;
+import com.fourguard.wms.application.dto.request.UpdateWarehouseSectionStatusRequest;
 import com.fourguard.wms.application.dto.response.WarehouseSectionResponse;
 import com.fourguard.wms.application.dto.response.audit.WarehouseSectionAuditResponse;
 import com.fourguard.wms.domain.ports.in.WarehouseSectionUseCase;
@@ -55,6 +56,24 @@ public class WarehouseSectionController {
         WarehouseSectionResponse response = sectionUseCase.updateWarehouseSection(request);
         return ResponseEntity.ok(ApiResponse.ok("Sección de almacén actualizada con éxito", response));
     }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('SECTIONS_UPDATE') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Cambiar estado de la sección", description = "Cambia el estado operativo de una sección de almacén (ACTIVE, INACTIVE).")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Estado de la sección actualizado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Sección no encontrada")
+    })
+    public ResponseEntity<ApiResponse<WarehouseSectionResponse>> updateSectionStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateWarehouseSectionStatusRequest request) {
+        WarehouseSectionResponse response = sectionUseCase.updateWarehouseSectionStatus(id, request);
+        return ResponseEntity.ok(ApiResponse.ok("Estado de la sección actualizado con éxito", response));
+    }
+
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('SECTIONS_READ') or hasRole('OPERATIONS_MANAGER')")
