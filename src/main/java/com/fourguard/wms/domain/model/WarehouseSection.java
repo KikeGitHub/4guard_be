@@ -1,5 +1,6 @@
 package com.fourguard.wms.domain.model;
 
+import com.fourguard.wms.domain.enums.WarehouseSectionStatus;
 import lombok.*;
 
 import java.time.OffsetDateTime;
@@ -15,9 +16,11 @@ public class WarehouseSection {
     private Branch branch;
     private String code;
     private String name;
+    private WarehouseSectionStatus status;
     private Long version;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private String createdBy;
     private String updatedBy;
 }
+

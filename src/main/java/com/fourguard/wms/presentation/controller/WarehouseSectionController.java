@@ -3,6 +3,7 @@ package com.fourguard.wms.presentation.controller;
 import com.fourguard.wms.application.dto.request.CreateWarehouseSectionRequest;
 import com.fourguard.wms.application.dto.request.UpdateWarehouseSectionRequest;
 import com.fourguard.wms.application.dto.response.WarehouseSectionResponse;
+import com.fourguard.wms.application.dto.response.audit.WarehouseSectionAuditResponse;
 import com.fourguard.wms.domain.ports.in.WarehouseSectionUseCase;
 import com.fourguard.wms.shared.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -99,5 +100,19 @@ public class WarehouseSectionController {
     public ResponseEntity<ApiResponse<Void>> deleteSection(@PathVariable UUID id) {
         sectionUseCase.deleteWarehouseSection(id);
         return ResponseEntity.ok(ApiResponse.ok("Sección eliminada con éxito"));
+    }
+
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasAuthority('SECTIONS_READ') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Historial de auditoría de la sección", description = "Devuelve el historial cronológico de cambios de una sección de almacén.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Historial recuperado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Sección no encontrada")
+    })
+    public ResponseEntity<ApiResponse<List<WarehouseSectionAuditResponse>>> getSectionAuditLogs(@PathVariable UUID id) {
+        List<WarehouseSectionAuditResponse> response = sectionUseCase.getWarehouseSectionAuditLogs(id);
+        return ResponseEntity.ok(ApiResponse.ok("Historial de auditoría recuperado con éxito", response));
     }
 }

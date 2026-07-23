@@ -3,6 +3,7 @@ package com.fourguard.wms.application.mapper;
 import com.fourguard.wms.application.dto.request.CreateWarehouseSectionRequest;
 import com.fourguard.wms.application.dto.request.UpdateWarehouseSectionRequest;
 import com.fourguard.wms.application.dto.response.WarehouseSectionResponse;
+import com.fourguard.wms.domain.enums.WarehouseSectionStatus;
 import com.fourguard.wms.infrastructure.persistence.entity.WarehouseSectionEntity;
 import org.mapstruct.*;
 
@@ -21,6 +22,7 @@ public interface WarehouseSectionMapper {
 
     @Mapping(source = "branch.id", target = "branchId")
     @Mapping(source = "branch.name", target = "branchName")
+    @Mapping(target = "status", expression = "java(entity.getStatus() != null ? entity.getStatus().name() : com.fourguard.wms.domain.enums.WarehouseSectionStatus.ACTIVE.name())")
     WarehouseSectionResponse toResponse(WarehouseSectionEntity entity);
 
     @Mapping(target = "branch", ignore = true)
@@ -32,3 +34,4 @@ public interface WarehouseSectionMapper {
     @Mapping(target = "version", ignore = true)
     void updateEntityFromDto(UpdateWarehouseSectionRequest request, @MappingTarget WarehouseSectionEntity entity);
 }
+

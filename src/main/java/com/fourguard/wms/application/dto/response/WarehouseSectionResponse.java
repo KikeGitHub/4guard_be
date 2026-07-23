@@ -15,7 +15,9 @@ public class WarehouseSectionResponse {
     private final String branchName;
     private final String code;
     private final String name;
+    private final String status;
     private final Long version;
     private final OffsetDateTime createdAt;
     private final OffsetDateTime updatedAt;
 }
+
