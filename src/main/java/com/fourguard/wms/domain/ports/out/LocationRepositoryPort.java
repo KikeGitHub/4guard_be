@@ -14,4 +14,15 @@ public interface LocationRepositoryPort {
     LocationEntity           save(LocationEntity location);
     void                     deleteById(UUID id);
     List<LocationEntity>     findAll();
+
+    /** Finds all locations associated with a warehouse section. */
+    List<LocationEntity> findBySectionId(UUID sectionId);
+
+    /**
+     * Returns true if there is a location with the given {@code code} whose ID is
+     * different from {@code excludeId}. Used to detect duplicate codes on update.
+     */
+    boolean existsByCodeAndIdNot(String code, UUID excludeId);
 }
+
+

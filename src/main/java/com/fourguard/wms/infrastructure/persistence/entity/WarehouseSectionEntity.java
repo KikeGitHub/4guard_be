@@ -1,5 +1,6 @@
 package com.fourguard.wms.infrastructure.persistence.entity;
 
+import com.fourguard.wms.domain.enums.WarehouseSectionStatus;
 import com.fourguard.wms.shared.audit.BaseVersionedEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,7 +33,13 @@ public class WarehouseSectionEntity extends BaseVersionedEntity {
     @Column(length = 100)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private WarehouseSectionStatus status = WarehouseSectionStatus.ACTIVE;
+
     @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
     @Builder.Default
     private List<LocationEntity> locations = new ArrayList<>();
 }
+
