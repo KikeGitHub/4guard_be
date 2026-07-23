@@ -40,6 +40,9 @@ public class Location {
     /** Reason for the last status change. Required when status = BLOCKED or MAINTENANCE. */
     private String statusReason;
 
+    /** Observations / notes for the location. */
+    private String notes;
+
     // ── Legacy fields kept for backwards-compatibility ──────────────────────
     /** Derived from status: true only when status == BLOCKED. */
     private Boolean isBlocked;

@@ -1,5 +1,6 @@
 package com.fourguard.wms.application.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fourguard.wms.domain.enums.LocationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -50,5 +51,9 @@ public class CreateLocationRequest {
     /** Optional descriptive name (e.g. "Pasillo A – Rack 1 – Nivel 2"). */
     @Size(max = 150, message = "El nombre no puede superar 150 caracteres")
     String name;
+
+    /** Optional observations or notes. */
+    @JsonAlias({"observations", "observaciones"})
+    String notes;
 }
 

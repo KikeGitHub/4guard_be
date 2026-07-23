@@ -41,6 +41,9 @@ public class LocationResponse {
     /** Reason for the current status. Present for BLOCKED and MAINTENANCE. */
     private final String statusReason;
 
+    /** Observations / notes for the location. */
+    private final String notes;
+
     // ── Legacy fields kept for backwards-compatibility ──────────────────────
     /** Derived field: true when status == BLOCKED. */
     private final Boolean isBlocked;
