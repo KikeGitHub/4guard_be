@@ -10,13 +10,19 @@ import com.fourguard.wms.domain.exception.ConflictException;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
 import com.fourguard.wms.domain.exception.InvalidFsmTransitionException;
 import com.fourguard.wms.domain.exception.ValidationException;
+import com.fourguard.wms.application.dto.response.audit.LocationAuditResponse;
 import com.fourguard.wms.domain.ports.in.LocationUseCase;
+import com.fourguard.wms.domain.ports.out.AuditLogRepositoryPort;
 import com.fourguard.wms.domain.ports.out.BranchRepositoryPort;
 import com.fourguard.wms.domain.ports.out.LocationRepositoryPort;
+import com.fourguard.wms.domain.ports.out.UserRepositoryPort;
 import com.fourguard.wms.domain.ports.out.WarehouseSectionRepositoryPort;
+import com.fourguard.wms.infrastructure.persistence.entity.AuditLogEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.BranchEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.LocationEntity;
+import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.WarehouseSectionEntity;
+import com.fourguard.wms.shared.audit.AuditService;
 import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +30,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -36,8 +44,11 @@ public class LocationService implements LocationUseCase {
     private final LocationRepositoryPort locationRepositoryPort;
     private final BranchRepositoryPort branchRepositoryPort;
     private final WarehouseSectionRepositoryPort sectionRepositoryPort;
+    private final UserRepositoryPort userRepositoryPort;
+    private final AuditLogRepositoryPort auditLogRepositoryPort;
     private final LocationMapper locationMapper;
     private final SecurityAuditHelper securityAuditHelper;
+    private final AuditService auditService;
 
     // =========================================================================
     // CREATE
@@ -70,9 +81,14 @@ public class LocationService implements LocationUseCase {
         entity.setIsBlocked(false);
         entity.setBlockReason(null);
 
-        entity.setCreatedBy(securityAuditHelper.getCurrentUsername());
+        String currentUser = securityAuditHelper.getCurrentUsername();
+        entity.setCreatedBy(currentUser);
 
         LocationEntity saved = locationRepositoryPort.save(entity);
+
+        // Audit log
+        logAuditChange(currentUser, "LOCATION_CREATED", saved.getId(), null, saved);
+
         return locationMapper.toResponse(saved);
     }
 
@@ -106,6 +122,9 @@ public class LocationService implements LocationUseCase {
             }
         }
 
+        // Take snapshot for audit
+        LocationEntity originalSnapshot = cloneLocationEntity(existing);
+
         locationMapper.updateEntityFromDto(request, existing);
         existing.setBranch(branch);
         existing.setSection(section);
@@ -113,8 +132,13 @@ public class LocationService implements LocationUseCase {
         // NOTE: status is NOT modified here — use PATCH /locations/{id}/status
         // Legacy isBlocked/blockReason remain in sync via the DB trigger.
 
-        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
+        String currentUser = securityAuditHelper.getCurrentUsername();
+        existing.setUpdatedBy(currentUser);
         LocationEntity saved = locationRepositoryPort.save(existing);
+
+        // Audit log
+        logAuditChange(currentUser, "LOCATION_UPDATED", saved.getId(), originalSnapshot, saved);
+
         return locationMapper.toResponse(saved);
     }
 
@@ -129,6 +153,8 @@ public class LocationService implements LocationUseCase {
 
         LocationEntity existing = locationRepositoryPort.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Ubicación no encontrada con ID: " + id));
+
+        LocationEntity originalSnapshot = cloneLocationEntity(existing);
 
         LocationStatus currentStatus = existing.getStatus() != null ? existing.getStatus() : LocationStatus.ACTIVE;
         LocationStatus targetStatus  = request.getStatus();
@@ -164,9 +190,14 @@ public class LocationService implements LocationUseCase {
         existing.setIsBlocked(targetStatus == LocationStatus.BLOCKED);
         existing.setBlockReason(targetStatus == LocationStatus.BLOCKED ? request.getReason() : null);
 
-        existing.setUpdatedBy(securityAuditHelper.getCurrentUsername());
+        String currentUser = securityAuditHelper.getCurrentUsername();
+        existing.setUpdatedBy(currentUser);
 
         LocationEntity saved = locationRepositoryPort.save(existing);
+
+        // Audit log
+        logAuditChange(currentUser, "LOCATION_STATUS_UPDATED", saved.getId(), originalSnapshot, saved);
+
         log.info("Location ID={} status changed from {} to {}", id, currentStatus, targetStatus);
         return locationMapper.toResponse(saved);
     }
@@ -219,9 +250,100 @@ public class LocationService implements LocationUseCase {
     @Transactional
     public void deleteLocation(UUID id) {
         log.info("Deleting location ID={}", id);
+        LocationEntity existing = locationRepositoryPort.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Ubicación no encontrada con ID: " + id));
+
+        LocationEntity originalSnapshot = cloneLocationEntity(existing);
+        String currentUser = securityAuditHelper.getCurrentUsername();
+
+        // Log delete audit before actual removal
+        logAuditChange(currentUser, "LOCATION_DELETED", id, originalSnapshot, null);
+
+        locationRepositoryPort.deleteById(id);
+    }
+
+    // =========================================================================
+    // AUDIT LOGS
+    // =========================================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LocationAuditResponse> getLocationAuditLogs(UUID id) {
+        log.debug("Fetching audit logs for location: {}", id);
         if (!locationRepositoryPort.findById(id).isPresent()) {
             throw new EntityNotFoundException("Ubicación no encontrada con ID: " + id);
         }
-        locationRepositoryPort.deleteById(id);
+
+        List<AuditLogEntity> logs = auditLogRepositoryPort.findByEntityTypeAndEntityId("LOCATION", id);
+
+        return logs.stream()
+                .map(logEntry -> {
+                    String username = "SYSTEM";
+                    if (logEntry.getUserId() != null) {
+                        username = userRepositoryPort.findById(logEntry.getUserId())
+                                .map(UserEntity::getUsername)
+                                .orElse("UNKNOWN");
+                    }
+                    List<LocationAuditResponse.AuditDetailResponse> detailResponses = logEntry.getDetails().stream()
+                            .map(d -> LocationAuditResponse.AuditDetailResponse.builder()
+                                    .fieldName(d.getFieldName())
+                                    .oldValue(d.getOldValue())
+                                    .newValue(d.getNewValue())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    return LocationAuditResponse.builder()
+                            .logId(logEntry.getLogId())
+                            .action(logEntry.getAction())
+                            .username(username)
+                            .createdAt(logEntry.getCreatedAt())
+                            .details(detailResponses)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    // ── Audit Helpers ─────────────────────────────────────────────────────────
+
+    private LocationEntity cloneLocationEntity(LocationEntity source) {
+        if (source == null) return null;
+        return source.toBuilder().build();
+    }
+
+    private void logAuditChange(String username, String action, UUID entityId, LocationEntity before, LocationEntity after) {
+        try {
+            UserEntity actor = userRepositoryPort.findByUsername(username).orElse(null);
+            if (actor != null) {
+                Map<String, Object> beforeState = buildAuditState(before);
+                Map<String, Object> afterState = buildAuditState(after);
+                auditService.log(actor, action, "LOCATION", entityId, beforeState, afterState);
+            }
+        } catch (Exception e) {
+            log.error("Failed to persist audit log for location operation", e);
+        }
+    }
+
+    private Map<String, Object> buildAuditState(LocationEntity entity) {
+        if (entity == null) return null;
+        Map<String, Object> state = new HashMap<>();
+        state.put("id", entity.getId() != null ? entity.getId().toString() : null);
+        state.put("code", entity.getCode());
+        state.put("name", entity.getName());
+        state.put("zone", entity.getZone());
+        state.put("aisle", entity.getAisle());
+        state.put("rack", entity.getRack());
+        state.put("level", entity.getLevel());
+        state.put("position", entity.getPosition());
+        state.put("coordX", entity.getCoordX());
+        state.put("coordY", entity.getCoordY());
+        state.put("coordZ", entity.getCoordZ());
+        state.put("type", entity.getType() != null ? entity.getType().name() : null);
+        state.put("status", entity.getStatus() != null ? entity.getStatus().name() : null);
+        state.put("statusReason", entity.getStatusReason());
+        state.put("capacityUnits", entity.getCapacityUnits());
+        state.put("currentOccupancy", entity.getCurrentOccupancy());
+        state.put("branchId", entity.getBranch() != null ? entity.getBranch().getId().toString() : null);
+        state.put("sectionId", entity.getSection() != null ? entity.getSection().getId().toString() : null);
+        return state;
     }
 }
