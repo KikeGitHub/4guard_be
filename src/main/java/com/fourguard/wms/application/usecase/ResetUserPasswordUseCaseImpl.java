@@ -24,6 +24,17 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
 
     @Override
     @Transactional
+    public String resetToTemporaryPasswordById(UUID userId, String adminUsername) {
+        log.info("[AUTH] Admin '{}' requested temporary password reset for user ID: {}", adminUsername, userId);
+
+        UserEntity userEntity = userRepositoryPort.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("No se encontró ningún usuario con el ID: " + userId));
+
+        return executeReset(userEntity, adminUsername);
+    }
+
+    @Override
+    @Transactional
     public String resetToTemporaryPassword(String usernameOrEmail, String adminUsername) {
         log.info("[AUTH] Admin '{}' requested temporary password reset for user/email: {}", adminUsername, usernameOrEmail);
 
@@ -32,8 +43,11 @@ public class ResetUserPasswordUseCaseImpl implements ResetUserPasswordUseCase {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "No se encontró ningún usuario con el nombre de usuario o correo electrónico: '" + usernameOrEmail + "'"));
 
-        UUID userId = userEntity.getId();
+        return executeReset(userEntity, adminUsername);
+    }
 
+    private String executeReset(UserEntity userEntity, String adminUsername) {
+        UUID userId = userEntity.getId();
         UserEntity adminEntity = resolveAuditActor(adminUsername, userEntity);
 
         // Generate temporary password with complexity: 4G-<8 chars hex>-*
