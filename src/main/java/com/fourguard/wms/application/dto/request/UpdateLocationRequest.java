@@ -1,5 +1,6 @@
 package com.fourguard.wms.application.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fourguard.wms.domain.enums.LocationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +10,7 @@ import lombok.Value;
 
 import java.util.UUID;
 
-/** Request DTO for updating a Location. */
+/** Request DTO for updating a Location. Status changes must use PATCH /locations/{id}/status. */
 @Value
 @Builder
 public class UpdateLocationRequest {
@@ -48,4 +49,17 @@ public class UpdateLocationRequest {
 
     Boolean isBlocked;
     String blockReason;
+
+    /** Optional human-readable unique code. Returns HTTP 409 if already taken by another location. */
+    @Size(max = 30, message = "El código no puede superar 30 caracteres")
+    String code;
+
+    /** Optional descriptive name. */
+    @Size(max = 150, message = "El nombre no puede superar 150 caracteres")
+    String name;
+
+    /** Optional observations or notes. */
+    @JsonAlias({"observations", "observaciones"})
+    String notes;
 }
+

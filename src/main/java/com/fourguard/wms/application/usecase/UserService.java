@@ -3,6 +3,7 @@ package com.fourguard.wms.application.usecase;
 import com.fourguard.wms.application.dto.UserCreateRequest;
 import com.fourguard.wms.application.dto.UserResponse;
 import com.fourguard.wms.application.dto.UserUpdateRequest;
+import com.fourguard.wms.application.dto.response.audit.UserAuditResponse;
 import com.fourguard.wms.application.mapper.UserMapper;
 import com.fourguard.wms.domain.enums.UserStatus;
 import com.fourguard.wms.domain.model.Branch;
@@ -13,15 +14,17 @@ import com.fourguard.wms.domain.ports.in.CreateUserUseCase;
 import com.fourguard.wms.domain.ports.in.GetUserUseCase;
 import com.fourguard.wms.domain.ports.in.UpdateUserUseCase;
 import com.fourguard.wms.domain.ports.in.DeleteUserUseCase;
+import com.fourguard.wms.domain.ports.out.AuditLogRepositoryPort;
 import com.fourguard.wms.domain.ports.out.BranchRepositoryPort;
 import com.fourguard.wms.domain.ports.out.OrganizationRepositoryPort;
 import com.fourguard.wms.domain.ports.out.RoleRepositoryPort;
 import com.fourguard.wms.domain.ports.out.UserRepositoryPort;
+import com.fourguard.wms.infrastructure.persistence.entity.AuditLogEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
 import com.fourguard.wms.domain.exception.ValidationException;
+import com.fourguard.wms.shared.audit.AuditService;
 import com.fourguard.wms.shared.audit.SecurityAuditHelper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,8 +32,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -40,9 +46,11 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
     private final OrganizationRepositoryPort organizationRepositoryPort;
     private final BranchRepositoryPort branchRepositoryPort;
     private final RoleRepositoryPort roleRepositoryPort;
+    private final AuditLogRepositoryPort auditLogRepositoryPort;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final SecurityAuditHelper securityAuditHelper;
+    private final AuditService auditService;
 
     // Usar @Lazy en el constructor para romper ciclos de dependencia
     public UserService(
@@ -50,17 +58,21 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
             OrganizationRepositoryPort organizationRepositoryPort,
             BranchRepositoryPort branchRepositoryPort,
             RoleRepositoryPort roleRepositoryPort,
+            AuditLogRepositoryPort auditLogRepositoryPort,
             @Lazy UserMapper userMapper,
             PasswordEncoder passwordEncoder,
-            SecurityAuditHelper securityAuditHelper
+            SecurityAuditHelper securityAuditHelper,
+            AuditService auditService
     ) {
         this.userRepositoryPort = userRepositoryPort;
         this.organizationRepositoryPort = organizationRepositoryPort;
         this.branchRepositoryPort = branchRepositoryPort;
         this.roleRepositoryPort = roleRepositoryPort;
+        this.auditLogRepositoryPort = auditLogRepositoryPort;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.securityAuditHelper = securityAuditHelper;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -89,9 +101,15 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
         user.setFailedAttempts(0);
         user.setPermanentlyLocked(false);
         user.setCreatedAt(OffsetDateTime.now());
-        user.setCreatedBy(securityAuditHelper.getCurrentUsername());
+
+        String currentUser = securityAuditHelper.getCurrentUsername();
+        user.setCreatedBy(currentUser);
 
         UserEntity savedUserEntity = userRepositoryPort.save(userMapper.toUserEntity(user));
+
+        // Audit log
+        logAuditChange(currentUser, "USER_CREATED", savedUserEntity.getId(), null, savedUserEntity);
+
         return userMapper.toUserResponse(userMapper.toUser(savedUserEntity));
     }
 
@@ -121,6 +139,10 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
 
         UserEntity existingUserEntity = userRepositoryPort.findById(request.getId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + request.getId()));
+        
+        // Take snapshot for audit
+        UserEntity originalSnapshot = cloneUserEntity(existingUserEntity);
+
         User existingUser = userMapper.toUser(existingUserEntity);
 
         // Check for username/email uniqueness if they are being changed
@@ -151,23 +173,106 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
             existingUser.setRole(findRoleById(request.getRoleId()));
         }
 
+        String currentUser = securityAuditHelper.getCurrentUsername();
         existingUser.setUpdatedAt(OffsetDateTime.now());
-        existingUser.setUpdatedBy(securityAuditHelper.getCurrentUsername());
+        existingUser.setUpdatedBy(currentUser);
 
         UserEntity updatedUserEntity = userRepositoryPort.save(userMapper.toUserEntity(existingUser));
+
+        // Audit log
+        logAuditChange(currentUser, "USER_UPDATED", updatedUserEntity.getId(), originalSnapshot, updatedUserEntity);
+
         return userMapper.toUserResponse(userMapper.toUser(updatedUserEntity));
     }
 
     @Transactional
     public void deleteUser(UUID id) {
         log.info("Deleting user with ID: {}", id);
-        if (!userRepositoryPort.findById(id).isPresent()) {
-            throw new EntityNotFoundException("User not found with ID: " + id);
-        }
+        UserEntity existingUserEntity = userRepositoryPort.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
+
+        UserEntity originalSnapshot = cloneUserEntity(existingUserEntity);
+        String currentUser = securityAuditHelper.getCurrentUsername();
+
+        // Audit log before deletion
+        logAuditChange(currentUser, "USER_DELETED", id, originalSnapshot, null);
+
         userRepositoryPort.deleteById(id);
     }
 
-    // ── Private helper methods to resolve relationships ───────────────────────
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserAuditResponse> getUserAuditLogs(UUID id) {
+        log.debug("Fetching audit logs for user: {}", id);
+        if (!userRepositoryPort.findById(id).isPresent()) {
+            throw new EntityNotFoundException("User not found with ID: " + id);
+        }
+
+        List<AuditLogEntity> logs = auditLogRepositoryPort.findByEntityTypeAndEntityId("USER", id);
+
+        return logs.stream()
+                .map(logEntry -> {
+                    String username = "SYSTEM";
+                    if (logEntry.getUserId() != null) {
+                        username = userRepositoryPort.findById(logEntry.getUserId())
+                                .map(UserEntity::getUsername)
+                                .orElse("UNKNOWN");
+                    }
+                    List<UserAuditResponse.AuditDetailResponse> detailResponses = logEntry.getDetails().stream()
+                            .map(d -> UserAuditResponse.AuditDetailResponse.builder()
+                                    .fieldName(d.getFieldName())
+                                    .oldValue(d.getOldValue())
+                                    .newValue(d.getNewValue())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    return UserAuditResponse.builder()
+                            .logId(logEntry.getLogId())
+                            .action(logEntry.getAction())
+                            .username(username)
+                            .createdAt(logEntry.getCreatedAt())
+                            .details(detailResponses)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    // ── Audit & Private Helpers ───────────────────────────────────────────────
+
+    private UserEntity cloneUserEntity(UserEntity source) {
+        if (source == null) return null;
+        return source.toBuilder().build();
+    }
+
+    private void logAuditChange(String username, String action, UUID entityId, UserEntity before, UserEntity after) {
+        try {
+            UserEntity actor = userRepositoryPort.findByUsername(username).orElse(null);
+            if (actor != null) {
+                Map<String, Object> beforeState = buildAuditState(before);
+                Map<String, Object> afterState = buildAuditState(after);
+                auditService.log(actor, action, "USER", entityId, beforeState, afterState);
+            }
+        } catch (Exception e) {
+            log.error("Failed to persist audit log for user operation", e);
+        }
+    }
+
+    private Map<String, Object> buildAuditState(UserEntity entity) {
+        if (entity == null) return null;
+        Map<String, Object> state = new HashMap<>();
+        state.put("id", entity.getId() != null ? entity.getId().toString() : null);
+        state.put("username", entity.getUsername());
+        state.put("email", entity.getEmail());
+        state.put("firstName", entity.getFirstName());
+        state.put("lastName", entity.getLastName());
+        state.put("status", entity.getStatus() != null ? entity.getStatus().name() : null);
+        state.put("isEnabled", entity.getIsEnabled());
+        state.put("changePasswordRequired", entity.getChangePasswordRequired());
+        state.put("organizationId", entity.getOrganization() != null ? entity.getOrganization().getId().toString() : null);
+        state.put("branchId", entity.getBranch() != null ? entity.getBranch().getId().toString() : null);
+        state.put("roleId", entity.getRole() != null ? entity.getRole().getId().toString() : null);
+        return state;
+    }
 
     private Organization findOrganizationById(UUID id) {
         return organizationRepositoryPort.findById(id)
@@ -210,4 +315,4 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, UpdateUse
             user.setRole(findRoleById(user.getRole().getId()));
         }
     }
-}
+}

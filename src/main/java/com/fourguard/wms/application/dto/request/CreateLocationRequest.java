@@ -1,5 +1,6 @@
 package com.fourguard.wms.application.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fourguard.wms.domain.enums.LocationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -42,4 +43,17 @@ public class CreateLocationRequest {
     LocationType type;
 
     Integer capacityUnits;
+
+    /** Optional human-readable unique code (e.g. "ALMC-A-R1-N2"). Generated or left null if absent. */
+    @Size(max = 30, message = "El código no puede superar 30 caracteres")
+    String code;
+
+    /** Optional descriptive name (e.g. "Pasillo A – Rack 1 – Nivel 2"). */
+    @Size(max = 150, message = "El nombre no puede superar 150 caracteres")
+    String name;
+
+    /** Optional observations or notes. */
+    @JsonAlias({"observations", "observaciones"})
+    String notes;
 }
+

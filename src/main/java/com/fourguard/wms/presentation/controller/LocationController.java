@@ -2,7 +2,9 @@ package com.fourguard.wms.presentation.controller;
 
 import com.fourguard.wms.application.dto.request.CreateLocationRequest;
 import com.fourguard.wms.application.dto.request.UpdateLocationRequest;
+import com.fourguard.wms.application.dto.request.UpdateLocationStatusRequest;
 import com.fourguard.wms.application.dto.response.LocationResponse;
+import com.fourguard.wms.application.dto.response.audit.LocationAuditResponse;
 import com.fourguard.wms.domain.ports.in.LocationUseCase;
 import com.fourguard.wms.shared.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,9 +28,13 @@ public class LocationController {
 
     private final LocationUseCase locationUseCase;
 
+    // =========================================================================
+    // POST — Create
+    // =========================================================================
+
     @PostMapping
     @PreAuthorize("hasAuthority('LOCATIONS_CREATE') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Crear ubicación", description = "Registra una nueva posición de almacenamiento física.")
+    @Operation(summary = "Crear ubicación", description = "Registra una nueva posición de almacenamiento física con estado inicial ACTIVE.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Ubicación creada con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
@@ -40,20 +46,68 @@ public class LocationController {
         return ResponseEntity.ok(ApiResponse.ok("Ubicación creada con éxito", response));
     }
 
+    // =========================================================================
+    // PUT — Update data (NOT status)
+    // =========================================================================
+
     @PutMapping
     @PreAuthorize("hasAuthority('LOCATIONS_UPDATE') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Actualizar ubicación", description = "Actualiza los datos o el estado de bloqueo de una ubicación.")
+    @Operation(
+        summary = "Actualizar ubicación",
+        description = "Actualiza los datos de una ubicación. Para cambiar el estado operativo usa PATCH /{id}/status."
+    )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Ubicación actualizada con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Ubicación no encontrada")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Ubicación no encontrada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "El código ya está asignado a otra ubicación")
     })
     public ResponseEntity<ApiResponse<LocationResponse>> updateLocation(@Valid @RequestBody UpdateLocationRequest request) {
         LocationResponse response = locationUseCase.updateLocation(request);
         return ResponseEntity.ok(ApiResponse.ok("Ubicación actualizada con éxito", response));
     }
+
+    // =========================================================================
+    // PATCH — FSM status change
+    // =========================================================================
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('LOCATIONS_UPDATE') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(
+        summary = "Cambiar estado de la ubicación",
+        description = """
+            Cambia el estado operativo (FSM) de una ubicación.
+            Transiciones permitidas:
+              ACTIVE → BLOCKED | MAINTENANCE | INACTIVE
+              BLOCKED → ACTIVE
+              MAINTENANCE → ACTIVE
+              INACTIVE → ACTIVE
+            El campo 'reason' es obligatorio para BLOCKED y MAINTENANCE.
+            Solo se permite INACTIVE si currentOccupancy = 0.
+            """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Estado cambiado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Reason obligatorio no proporcionado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Ubicación no encontrada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Ubicación con inventario activo (para INACTIVE)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "422", description = "Transición de estado inválida")
+    })
+    public ResponseEntity<ApiResponse<LocationResponse>> changeLocationStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateLocationStatusRequest request) {
+        LocationResponse response = locationUseCase.changeLocationStatus(id, request);
+        String msg = "Estado cambiado a " + request.getStatus().name() + " correctamente.";
+        return ResponseEntity.ok(ApiResponse.ok(msg, response));
+    }
+
+    // =========================================================================
+    // GET — Read
+    // =========================================================================
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('LOCATIONS_READ') or hasRole('OPERATIONS_MANAGER')")
@@ -71,7 +125,10 @@ public class LocationController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('LOCATIONS_READ') or hasRole('OPERATIONS_MANAGER')")
-    @Operation(summary = "Obtener ubicaciones", description = "Recupera la lista de ubicaciones, opcionalmente filtrando por sucursal y estado de disponibilidad.")
+    @Operation(
+        summary = "Obtener ubicaciones",
+        description = "Recupera la lista de ubicaciones, opcionalmente filtrando por sucursal y estado de disponibilidad."
+    )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lista de ubicaciones recuperada con éxito"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
@@ -93,6 +150,10 @@ public class LocationController {
         return ResponseEntity.ok(ApiResponse.ok("Lista de ubicaciones recuperada con éxito", response));
     }
 
+    // =========================================================================
+    // DELETE
+    // =========================================================================
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('LOCATIONS_DELETE') or hasRole('OPERATIONS_MANAGER')")
     @Operation(summary = "Eliminar ubicación", description = "Elimina físicamente una ubicación del sistema por su ID.")
@@ -105,5 +166,23 @@ public class LocationController {
     public ResponseEntity<ApiResponse<Void>> deleteLocation(@PathVariable UUID id) {
         locationUseCase.deleteLocation(id);
         return ResponseEntity.ok(ApiResponse.ok("Ubicación eliminada con éxito"));
+    }
+
+    // =========================================================================
+    // AUDIT LOGS
+    // =========================================================================
+
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasAuthority('LOCATIONS_READ') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Historial de auditoría de la ubicación", description = "Devuelve el historial cronológico de cambios de una ubicación específica.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Historial de auditoría recuperado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Ubicación no encontrada")
+    })
+    public ResponseEntity<ApiResponse<List<LocationAuditResponse>>> getLocationAuditLogs(@PathVariable UUID id) {
+        List<LocationAuditResponse> response = locationUseCase.getLocationAuditLogs(id);
+        return ResponseEntity.ok(ApiResponse.ok("Historial de auditoría recuperado con éxito", response));
     }
 }

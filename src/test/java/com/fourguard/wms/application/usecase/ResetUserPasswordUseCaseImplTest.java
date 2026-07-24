@@ -57,6 +57,30 @@ class ResetUserPasswordUseCaseImplTest {
     }
 
     @Test
+    void whenResetToTemporaryPassword_byId_thenSuccess() {
+        // Arrange
+        when(userRepositoryPort.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(userRepositoryPort.findByUsername("adminUser")).thenReturn(Optional.of(adminUserEntity));
+        when(passwordEncoder.encode(anyString())).thenReturn("newHashedPassword");
+
+        // Act
+        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPasswordById(userId, "adminUser");
+
+        // Assert
+        assertNotNull(tempPassword);
+        assertTrue(tempPassword.startsWith("4G-"));
+        assertTrue(tempPassword.endsWith("*"));
+
+        ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepositoryPort, times(1)).save(captor.capture());
+
+        UserEntity savedUser = captor.getValue();
+        assertEquals("newHashedPassword", savedUser.getPassword());
+        assertTrue(savedUser.getChangePasswordRequired());
+        assertEquals("adminUser", savedUser.getUpdatedBy());
+    }
+
+    @Test
     void whenResetToTemporaryPassword_byUsername_thenSuccess() {
         // Arrange
         when(userRepositoryPort.findByUsernameOrEmail("testoperator")).thenReturn(Optional.of(userEntity));

@@ -1,5 +1,6 @@
 package com.fourguard.wms.application.dto.request;
 
+import com.fourguard.wms.domain.enums.WarehouseSectionStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -25,4 +26,7 @@ public class UpdateWarehouseSectionRequest {
 
     @Size(max = 100, message = "El nombre no puede superar 100 caracteres")
     String name;
+
+    WarehouseSectionStatus status;
 }
+

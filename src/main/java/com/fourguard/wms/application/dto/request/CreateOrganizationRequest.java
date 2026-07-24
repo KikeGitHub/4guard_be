@@ -4,6 +4,8 @@ import com.fourguard.wms.domain.enums.OrganizationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +14,8 @@ import java.util.Map;
 /** Request DTO for creating an Organization. */
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CreateOrganizationRequest {
 
     @NotBlank(message = "El nombre de la organización es requerido")
