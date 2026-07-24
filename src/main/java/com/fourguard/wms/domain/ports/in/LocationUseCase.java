@@ -4,6 +4,7 @@ import com.fourguard.wms.application.dto.request.CreateLocationRequest;
 import com.fourguard.wms.application.dto.request.UpdateLocationRequest;
 import com.fourguard.wms.application.dto.request.UpdateLocationStatusRequest;
 import com.fourguard.wms.application.dto.response.LocationResponse;
+import com.fourguard.wms.application.dto.response.audit.LocationAuditResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,5 +27,13 @@ public interface LocationUseCase {
      * @return updated location response
      */
     LocationResponse changeLocationStatus(UUID id, UpdateLocationStatusRequest request);
+
+    /**
+     * Retrieves the audit log history for a specific location.
+     *
+     * @param id location UUID
+     * @return list of audit log entries for the location
+     */
+    List<LocationAuditResponse> getLocationAuditLogs(UUID id);
 }
 

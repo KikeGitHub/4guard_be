@@ -4,6 +4,7 @@ import com.fourguard.wms.application.dto.request.CreateLocationRequest;
 import com.fourguard.wms.application.dto.request.UpdateLocationRequest;
 import com.fourguard.wms.application.dto.request.UpdateLocationStatusRequest;
 import com.fourguard.wms.application.dto.response.LocationResponse;
+import com.fourguard.wms.application.dto.response.audit.LocationAuditResponse;
 import com.fourguard.wms.domain.ports.in.LocationUseCase;
 import com.fourguard.wms.shared.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -165,5 +166,23 @@ public class LocationController {
     public ResponseEntity<ApiResponse<Void>> deleteLocation(@PathVariable UUID id) {
         locationUseCase.deleteLocation(id);
         return ResponseEntity.ok(ApiResponse.ok("Ubicación eliminada con éxito"));
+    }
+
+    // =========================================================================
+    // AUDIT LOGS
+    // =========================================================================
+
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasAuthority('LOCATIONS_READ') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Historial de auditoría de la ubicación", description = "Devuelve el historial cronológico de cambios de una ubicación específica.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Historial de auditoría recuperado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Ubicación no encontrada")
+    })
+    public ResponseEntity<ApiResponse<List<LocationAuditResponse>>> getLocationAuditLogs(@PathVariable UUID id) {
+        List<LocationAuditResponse> response = locationUseCase.getLocationAuditLogs(id);
+        return ResponseEntity.ok(ApiResponse.ok("Historial de auditoría recuperado con éxito", response));
     }
 }

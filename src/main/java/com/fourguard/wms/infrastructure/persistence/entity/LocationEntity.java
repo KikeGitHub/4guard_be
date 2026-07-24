@@ -86,6 +86,10 @@ public class LocationEntity extends BaseVersionedEntity {
     @Column(name = "status_reason", length = 300)
     private String statusReason;
 
+    /** Observations / notes for the location. */
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
     // ── Legacy fields — kept in sync via DB trigger ─────────────────────────
 
     @Column(name = "is_blocked")
