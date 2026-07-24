@@ -3,23 +3,27 @@ package com.fourguard.wms.application.usecase;
 import com.fourguard.wms.application.dto.UserCreateRequest;
 import com.fourguard.wms.application.dto.UserResponse;
 import com.fourguard.wms.application.dto.UserUpdateRequest;
+import com.fourguard.wms.application.dto.response.audit.UserAuditResponse;
 import com.fourguard.wms.application.mapper.UserMapper;
 import com.fourguard.wms.domain.enums.UserStatus;
 import com.fourguard.wms.domain.model.Branch;
 import com.fourguard.wms.domain.model.Organization;
 import com.fourguard.wms.domain.model.Role;
 import com.fourguard.wms.domain.model.User;
+import com.fourguard.wms.domain.ports.out.AuditLogRepositoryPort;
 import com.fourguard.wms.domain.ports.out.BranchRepositoryPort;
 import com.fourguard.wms.domain.ports.out.OrganizationRepositoryPort;
 import com.fourguard.wms.domain.ports.out.RoleRepositoryPort;
 import com.fourguard.wms.domain.ports.out.UserRepositoryPort;
+import com.fourguard.wms.infrastructure.persistence.entity.AuditLogEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.BranchEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.OrganizationEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.RoleEntity;
 import com.fourguard.wms.infrastructure.persistence.entity.UserEntity;
 import com.fourguard.wms.domain.exception.EntityNotFoundException;
 import com.fourguard.wms.domain.exception.ValidationException;
-import com.fourguard.wms.shared.audit.SecurityAuditHelper; // Importar
+import com.fourguard.wms.shared.audit.AuditService;
+import com.fourguard.wms.shared.audit.SecurityAuditHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,11 +54,15 @@ class UserServiceTest {
     @Mock
     private RoleRepositoryPort roleRepositoryPort;
     @Mock
+    private AuditLogRepositoryPort auditLogRepositoryPort;
+    @Mock
     private UserMapper userMapper;
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
-    private SecurityAuditHelper securityAuditHelper; // <-- 1. AÑADIR EL MOCK
+    private SecurityAuditHelper securityAuditHelper;
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private UserService userService;
@@ -157,7 +165,7 @@ class UserServiceTest {
         when(userMapper.toUser(any(UserEntity.class))).thenReturn(user);
         when(userMapper.toUserResponse(any(User.class))).thenReturn(userResponse);
         
-        when(securityAuditHelper.getCurrentUsername()).thenReturn("test-admin"); // <-- 2. CONFIGURAR EL COMPORTAMIENTO
+        when(securityAuditHelper.getCurrentUsername()).thenReturn("test-admin");
 
         // Act
         UserResponse response = userService.createUser(createRequest);
@@ -171,7 +179,7 @@ class UserServiceTest {
         assertTrue(userCaptor.getValue().getChangePasswordRequired());
         assertEquals(0, userCaptor.getValue().getFailedAttempts());
         assertFalse(userCaptor.getValue().getPermanentlyLocked());
-        assertEquals("test-admin", userCaptor.getValue().getCreatedBy()); // Verificar que se establece el creador
+        assertEquals("test-admin", userCaptor.getValue().getCreatedBy());
         verify(userRepositoryPort, times(1)).save(any(UserEntity.class));
     }
 
@@ -241,7 +249,6 @@ class UserServiceTest {
     void whenUpdateUser_withValidData_thenSuccess() {
         // Arrange
         when(userRepositoryPort.findById(userId)).thenReturn(Optional.of(userEntity));
-        // Simulates uniqueness checks for username/email changes
         when(userRepositoryPort.existsByUsername(updateRequest.getUsername())).thenReturn(false);
         when(userRepositoryPort.existsByEmail(updateRequest.getEmail())).thenReturn(false);
         
@@ -261,7 +268,7 @@ class UserServiceTest {
                 .build();
         when(userMapper.toUserResponse(any(User.class))).thenReturn(updatedResponse);
         
-        when(securityAuditHelper.getCurrentUsername()).thenReturn("test-admin"); // <-- 2. CONFIGURAR EL COMPORTAMIENTO
+        when(securityAuditHelper.getCurrentUsername()).thenReturn("test-admin");
 
         // Act
         UserResponse response = userService.updateUser(updateRequest);
@@ -271,7 +278,7 @@ class UserServiceTest {
         assertEquals("john.updated", response.getUsername());
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userMapper, times(1)).toUserEntity(userCaptor.capture());
-        assertEquals("test-admin", userCaptor.getValue().getUpdatedBy()); // Verificar que se establece el actualizador
+        assertEquals("test-admin", userCaptor.getValue().getUpdatedBy());
         verify(userRepositoryPort, times(1)).save(any(UserEntity.class));
     }
 
@@ -279,6 +286,7 @@ class UserServiceTest {
     void whenDeleteUser_withExistingId_thenSuccess() {
         // Arrange
         when(userRepositoryPort.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(securityAuditHelper.getCurrentUsername()).thenReturn("test-admin");
 
         // Act
         userService.deleteUser(userId);
@@ -296,4 +304,26 @@ class UserServiceTest {
         assertThrows(EntityNotFoundException.class, () -> userService.deleteUser(userId));
         verify(userRepositoryPort, never()).deleteById(any());
     }
-}
+
+    @Test
+    void whenGetUserAuditLogs_withExistingId_thenReturnLogs() {
+        // Arrange
+        when(userRepositoryPort.findById(userId)).thenReturn(Optional.of(userEntity));
+        AuditLogEntity logEntity = AuditLogEntity.builder()
+                .logId(UUID.randomUUID())
+                .action("USER_CREATED")
+                .userId(userId)
+                .details(List.of())
+                .build();
+        when(auditLogRepositoryPort.findByEntityTypeAndEntityId("USER", userId)).thenReturn(List.of(logEntity));
+
+        // Act
+        List<UserAuditResponse> logs = userService.getUserAuditLogs(userId);
+
+        // Assert
+        assertNotNull(logs);
+        assertEquals(1, logs.size());
+        assertEquals("USER_CREATED", logs.get(0).getAction());
+        verify(auditLogRepositoryPort, times(1)).findByEntityTypeAndEntityId("USER", userId);
+    }
+}

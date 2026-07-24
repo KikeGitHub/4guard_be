@@ -3,6 +3,7 @@ package com.fourguard.wms.presentation.controller;
 import com.fourguard.wms.application.dto.UserCreateRequest;
 import com.fourguard.wms.application.dto.UserResponse;
 import com.fourguard.wms.application.dto.UserUpdateRequest;
+import com.fourguard.wms.application.dto.response.audit.UserAuditResponse;
 import com.fourguard.wms.domain.ports.in.CreateUserUseCase;
 import com.fourguard.wms.domain.ports.in.DeleteUserUseCase;
 import com.fourguard.wms.domain.ports.in.GetUserUseCase;
@@ -82,6 +83,20 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.ok("Usuario encontrado con éxito", response));
     }
 
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasAuthority('USERS_READ') or hasAuthority('AUDIT_READ')")
+    @Operation(summary = "Obtener historial de auditoría de usuario", description = "Devuelve el historial cronológico de cambios y acciones de un usuario específico.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Historial de auditoría recuperado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    public ResponseEntity<ApiResponse<List<UserAuditResponse>>> getUserAuditLogs(@PathVariable UUID id) {
+        List<UserAuditResponse> response = getUserUseCase.getUserAuditLogs(id);
+        return ResponseEntity.ok(ApiResponse.ok("Historial de auditoría recuperado con éxito", response));
+    }
+
     @PutMapping
     @PreAuthorize("hasAuthority('USERS_UPDATE')")
     @Operation(summary = "Actualizar usuario", description = "Actualiza los datos de un usuario existente. Requiere permisos de administrador.")
@@ -111,9 +126,24 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.ok("Usuario eliminado con éxito"));
     }
 
+    @PutMapping("/{id}/reset-password-temp")
+    @Operation(
+            summary = "Restablecer contraseña a temporal por ID de usuario",
+            description = "Genera una contraseña temporal para el usuario identificado por su UUID."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contraseña temporal generada con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Usuario no encontrado con el ID proporcionado")
+    })
+    public ResponseEntity<ApiResponse<String>> resetToTempById(@PathVariable UUID id, java.security.Principal principal) {
+        String adminUsername = (principal != null && principal.getName() != null) ? principal.getName() : "SYSTEM";
+        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPasswordById(id, adminUsername);
+        return ResponseEntity.ok(ApiResponse.ok("Contraseña temporal generada con éxito", tempPassword));
+    }
+
     @PutMapping("/reset-password-temp")
     @Operation(
-            summary = "Restablecer contraseña a temporal",
+            summary = "Restablecer contraseña a temporal por username o email",
             description = "Endpoint público (sin autenticación). Genera una contraseña temporal para el usuario identificado por su nombre de usuario o correo electrónico, y activa la bandera de cambio de clave obligatorio."
     )
     @ApiResponses({
@@ -121,8 +151,9 @@ public class UserController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Parámetro usernameOrEmail no proporcionado"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Usuario no encontrado con el nombre de usuario o correo proporcionado")
     })
-    public ResponseEntity<ApiResponse<String>> resetToTemp(@RequestParam String usernameOrEmail) {
-        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPassword(usernameOrEmail, "SYSTEM");
+    public ResponseEntity<ApiResponse<String>> resetToTemp(@RequestParam String usernameOrEmail, java.security.Principal principal) {
+        String adminUsername = (principal != null && principal.getName() != null) ? principal.getName() : "SYSTEM";
+        String tempPassword = resetUserPasswordUseCase.resetToTemporaryPassword(usernameOrEmail, adminUsername);
         return ResponseEntity.ok(ApiResponse.ok("Contraseña temporal generada con éxito", tempPassword));
     }
 
