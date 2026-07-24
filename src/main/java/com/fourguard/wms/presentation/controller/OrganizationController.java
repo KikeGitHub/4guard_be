@@ -3,6 +3,7 @@ package com.fourguard.wms.presentation.controller;
 import com.fourguard.wms.application.dto.request.CreateOrganizationRequest;
 import com.fourguard.wms.application.dto.request.UpdateOrganizationRequest;
 import com.fourguard.wms.application.dto.response.OrganizationResponse;
+import com.fourguard.wms.application.dto.response.audit.OrganizationAuditResponse;
 import com.fourguard.wms.domain.ports.in.CreateOrganizationUseCase;
 import com.fourguard.wms.domain.ports.in.DeleteOrganizationUseCase;
 import com.fourguard.wms.domain.ports.in.GetOrganizationUseCase;
@@ -73,6 +74,20 @@ public class OrganizationController {
     public ResponseEntity<ApiResponse<OrganizationResponse>> getOrganizationById(@PathVariable UUID id) {
         OrganizationResponse response = getOrganizationUseCase.getOrganizationById(id);
         return ResponseEntity.ok(ApiResponse.ok("Organización encontrada", response));
+    }
+
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasAuthority('ORGANIZATIONS_READ') or hasAuthority('AUDIT_READ') or hasRole('OPERATIONS_MANAGER')")
+    @Operation(summary = "Historial de auditoría de la organización", description = "Devuelve el historial cronológico de cambios de una organización específica.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Historial de auditoría recuperado con éxito"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Permisos insuficientes"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Organización no encontrada")
+    })
+    public ResponseEntity<ApiResponse<List<OrganizationAuditResponse>>> getOrganizationAuditLogs(@PathVariable UUID id) {
+        List<OrganizationAuditResponse> response = getOrganizationUseCase.getOrganizationAuditLogs(id);
+        return ResponseEntity.ok(ApiResponse.ok("Historial de auditoría recuperado con éxito", response));
     }
 
     @GetMapping
