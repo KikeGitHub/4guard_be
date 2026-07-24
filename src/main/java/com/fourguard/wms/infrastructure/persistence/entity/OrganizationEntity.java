@@ -3,15 +3,12 @@ package com.fourguard.wms.infrastructure.persistence.entity;
 import com.fourguard.wms.domain.enums.OrganizationStatus;
 import com.fourguard.wms.domain.enums.OrganizationType;
 import com.fourguard.wms.shared.audit.BaseVersionedEntity;
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -49,9 +46,9 @@ public class OrganizationEntity extends BaseVersionedEntity {
     @Builder.Default
     private OrganizationStatus status = OrganizationStatus.ACTIVE;
 
-    @Type(JsonType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, Object> settings;
+    @OneToMany(mappedBy = "organization", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<OrganizationSettingEntity> settings = new ArrayList<>();
 
     @OneToMany(mappedBy = "organization", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Builder.Default
