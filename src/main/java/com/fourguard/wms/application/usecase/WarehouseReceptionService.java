@@ -420,15 +420,18 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
             throw new ValidationException("El nuevo número de remisión es obligatorio.");
         }
 
-        reception.setDocNumber(newDoc.trim());
-        reception.setObservations((reception.getObservations() != null ? reception.getObservations() : "") +
-                " | Cambio Remisión: " + oldDoc + " -> " + newDoc + " (" + request.getReason() + ")");
+        // Validate Supervisor / Admin Credentials
+        UserEntity authorizedUser = validateUserCredentials(request.getAdminUsername(), request.getAdminPassword(), "Supervisor / Administrador");
+        String authorizedByName = authorizedUser.getFirstName() + " " + authorizedUser.getLastName() + " (" + authorizedUser.getUsername() + ")";
 
+        reception.setDocNumber(newDoc.trim());
         WarehouseReceptionEntity saved = receptionRepositoryPort.save(reception);
 
         logAudit(saved.getId(), "REMISION_MODIFICADA",
-                Map.of("docNumber", oldDoc),
-                Map.of("docNumber", newDoc, "reason", request.getReason()));
+                Map.of("docNumber", oldDoc != null ? oldDoc : "N/A"),
+                Map.of("docNumber", newDoc,
+                       "reason", request.getReason(),
+                       "authorizedBy", authorizedByName));
 
         return receptionMapper.toResponse(saved);
     }

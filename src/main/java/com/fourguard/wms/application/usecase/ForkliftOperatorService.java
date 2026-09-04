@@ -196,6 +196,7 @@ public class ForkliftOperatorService implements ForkliftOperatorUseCase {
                     String q = search.toLowerCase();
                     return op.getFullName().toLowerCase().contains(q)
                             || op.getCode().toLowerCase().contains(q)
+                            || (op.getJobTitle() != null && op.getJobTitle().toLowerCase().contains(q))
                             || op.getLicenseNumberDc3().toLowerCase().contains(q);
                 })
                 .map(mapper::toResponse)
@@ -348,6 +349,7 @@ public class ForkliftOperatorService implements ForkliftOperatorUseCase {
                 .organization(source.getOrganization())
                 .branch(source.getBranch())
                 .code(source.getCode())
+                .jobTitle(source.getJobTitle())
                 .firstName(source.getFirstName())
                 .lastNamePaternal(source.getLastNamePaternal())
                 .lastNameMaternal(source.getLastNameMaternal())
@@ -397,6 +399,7 @@ public class ForkliftOperatorService implements ForkliftOperatorUseCase {
         Map<String, Object> state = new HashMap<>();
         state.put("id",                    entity.getId() != null ? entity.getId().toString() : null);
         state.put("code",                  entity.getCode());
+        state.put("jobTitle",              entity.getJobTitle());
         state.put("fullName",              entity.getFullName());
         state.put("firstName",             entity.getFirstName());
         state.put("lastNamePaternal",      entity.getLastNamePaternal());
