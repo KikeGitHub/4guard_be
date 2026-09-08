@@ -101,7 +101,7 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
                 .tractorPlates(request.getTractorPlates())
                 .boxPlates(request.getBoxPlates())
                 .piecesPerPallet(BigDecimal.ZERO)
-                .palletType(PalletType.MADERA_ESTANDAR)
+                .palletType(null)
                 .build();
 
         if (request.getSealNumbers() != null && !request.getSealNumbers().isEmpty()) {
@@ -147,14 +147,44 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
         );
 
         if (request.getSkuId() != null) {
-            ProductSkuEntity sku = productSkuRepositoryPort.findById(request.getSkuId())
-                    .orElseThrow(() -> new EntityNotFoundException("SKU no encontrado: " + request.getSkuId()));
+            UUID skuId = request.getSkuId();
+            // Legacy V9 seed UUID mapping: 00000000-0000-0000-0007-0000000000XX -> 000010XX-0000-0000-0000-0000000010XX
+            String skuStr = skuId.toString();
+            if (skuStr.startsWith("00000000-0000-0000-0007-")) {
+                try {
+                    int num = Integer.parseInt(skuStr.substring(skuStr.length() - 4));
+                    int v10Num = 1000 + num;
+                    skuId = UUID.fromString(String.format("0000%04d-0000-0000-0000-00000000%04d", v10Num, v10Num));
+                } catch (Exception ignored) {}
+            }
+
+            ProductSkuEntity sku = productSkuRepositoryPort.findById(skuId).orElse(null);
+            if (sku == null && entity.getClient() != null) {
+                sku = productSkuRepositoryPort.findByClientIdAndCode(entity.getClient().getId(), request.getSkuId().toString()).orElse(null);
+            }
+            if (sku == null) {
+                sku = productSkuRepositoryPort.findFirstByCode(request.getSkuId().toString()).orElse(null);
+            }
+            if (sku == null) {
+                throw new EntityNotFoundException("SKU no encontrado: " + request.getSkuId());
+            }
             entity.setSku(sku);
         }
 
         if (request.getSupplierId() != null) {
-            SupplierEntity supplier = supplierRepositoryPort.findById(request.getSupplierId())
-                    .orElseThrow(() -> new EntityNotFoundException("Proveedor no encontrado: " + request.getSupplierId()));
+            UUID supId = request.getSupplierId();
+            String supStr = supId.toString();
+            if (supStr.startsWith("00000000-0000-0000-0003-")) {
+                try {
+                    int num = Integer.parseInt(supStr.substring(supStr.length() - 4));
+                    int v10Num = 30 + num;
+                    supId = UUID.fromString(String.format("000000%02d-0000-0000-0000-0000000000%02d", v10Num, v10Num));
+                } catch (Exception ignored) {}
+            }
+            SupplierEntity supplier = supplierRepositoryPort.findById(supId).orElse(null);
+            if (supplier == null) {
+                throw new EntityNotFoundException("Proveedor no encontrado: " + request.getSupplierId());
+            }
             entity.setSupplier(supplier);
         }
 
