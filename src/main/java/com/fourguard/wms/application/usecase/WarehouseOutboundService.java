@@ -347,7 +347,7 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
 
         // Sort by expirationDate ASC and mark the oldest as isFifoSuggested = true
         batches.sort(Comparator.comparing(
-                InventoryBatchResponse::getExpirationDate,
+                b -> b.getExpirationDate(),
                 Comparator.nullsLast(Comparator.naturalOrder())
         ));
 
@@ -362,7 +362,7 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
     @Transactional(readOnly = true)
     public List<MovementAuditResponse> getAuditLogs(UUID id) {
         List<AuditLogEntity> logs = auditLogRepositoryPort.findByEntityTypeAndEntityId("OUTBOUND", id);
-        return logs.stream().map(this::mapToAuditResponse).collect(Collectors.toList());
+        return logs.stream().map(logEntry -> mapToAuditResponse(logEntry)).collect(Collectors.toList());
     }
 
     // ─── PRIVATE HELPERS ─────────────────────────────────────────────────────────
