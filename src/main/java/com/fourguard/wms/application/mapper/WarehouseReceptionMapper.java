@@ -83,21 +83,12 @@ public interface WarehouseReceptionMapper {
 
     @Named("palletTypeToLabel")
     default String palletTypeToLabel(PalletType type) {
-        if (type == null) return null;
-        return switch (type) {
-            case MADERA_ESTANDAR -> "Madera Estándar";
-            case TARIMA_CHEP -> "Tarima CHEP";
-            case PLASTICO -> "Plástico";
-            case PLASTICO_AZUL -> "Plástico Azul";
-            case MADERA_EXPORTACION -> "Madera Exportación";
-            case SIN_TARIMA -> "Sin Tarima";
-            case MADERA -> "Madera";
-        };
+        return type != null ? type.getDescription() : null;
     }
 
     @Named("mapSealsToStrings")
     default List<String> mapSealsToStrings(List<WarehouseReceptionSealEntity> seals) {
         if (seals == null) return List.of();
-        return seals.stream().map(WarehouseReceptionSealEntity::getSealNumber).collect(Collectors.toList());
+        return seals.stream().map(s -> s.getSealNumber()).collect(Collectors.toList());
     }
 }
