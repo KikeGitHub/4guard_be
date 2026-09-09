@@ -54,6 +54,8 @@ public interface WarehouseReceptionMapper {
     @Mapping(source = "sku.code", target = "skuCode")
     @Mapping(source = "sku.name", target = "productName")
     @Mapping(source = "status", target = "status", qualifiedByName = "receptionStatusToString")
+    @Mapping(source = "storageLocation.id", target = "storageLocationId")
+    @Mapping(source = "storageLocation.code", target = "storageLocationCode")
     @Mapping(source = "createdBy", target = "capturedBy")
     @Mapping(target = "totalPallets", expression = "java(entity.getPallets() != null ? entity.getPallets().size() : 0)")
     @Mapping(target = "totalPieces", expression = "java(entity.getPallets() != null ? entity.getPallets().stream().mapToDouble(p -> p.getPieces() != null ? p.getPieces().doubleValue() : 0.0).sum() : 0.0)")

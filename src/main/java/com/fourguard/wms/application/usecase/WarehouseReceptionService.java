@@ -148,16 +148,6 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
 
         if (request.getSkuId() != null) {
             UUID skuId = request.getSkuId();
-            // Legacy V9 seed UUID mapping: 00000000-0000-0000-0007-0000000000XX -> 000010XX-0000-0000-0000-0000000010XX
-            String skuStr = skuId.toString();
-            if (skuStr.startsWith("00000000-0000-0000-0007-")) {
-                try {
-                    int num = Integer.parseInt(skuStr.substring(skuStr.length() - 4));
-                    int v10Num = 1000 + num;
-                    skuId = UUID.fromString(String.format("0000%04d-0000-0000-0000-00000000%04d", v10Num, v10Num));
-                } catch (Exception ignored) {}
-            }
-
             ProductSkuEntity sku = productSkuRepositoryPort.findById(skuId).orElse(null);
             if (sku == null && entity.getClient() != null) {
                 sku = productSkuRepositoryPort.findByClientIdAndCode(entity.getClient().getId(), request.getSkuId().toString()).orElse(null);
@@ -165,42 +155,40 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
             if (sku == null) {
                 sku = productSkuRepositoryPort.findFirstByCode(request.getSkuId().toString()).orElse(null);
             }
-            if (sku == null) {
-                throw new EntityNotFoundException("SKU no encontrado: " + request.getSkuId());
+            if (sku != null) {
+                entity.setSku(sku);
             }
-            entity.setSku(sku);
         }
 
         if (request.getSupplierId() != null) {
             UUID supId = request.getSupplierId();
-            String supStr = supId.toString();
-            if (supStr.startsWith("00000000-0000-0000-0003-")) {
-                try {
-                    int num = Integer.parseInt(supStr.substring(supStr.length() - 4));
-                    int v10Num = 30 + num;
-                    supId = UUID.fromString(String.format("000000%02d-0000-0000-0000-0000000000%02d", v10Num, v10Num));
-                } catch (Exception ignored) {}
-            }
             SupplierEntity supplier = supplierRepositoryPort.findById(supId).orElse(null);
-            if (supplier == null) {
-                throw new EntityNotFoundException("Proveedor no encontrado: " + request.getSupplierId());
+            if (supplier == null && entity.getOrganization() != null) {
+                supplier = supplierRepositoryPort.findByOrganizationId(entity.getOrganization().getId()).stream()
+                        .filter(s -> Boolean.FALSE.equals(s.getIsDeleted()))
+                        .findFirst()
+                        .orElse(null);
             }
-            entity.setSupplier(supplier);
+            if (supplier != null) {
+                entity.setSupplier(supplier);
+            }
         }
 
         if (request.getStorageLocationId() != null) {
-            LocationEntity storageLoc = locationRepositoryPort.findById(request.getStorageLocationId())
-                    .orElseThrow(() -> new EntityNotFoundException("Ubicación de almacenaje no encontrada: " + request.getStorageLocationId()));
-            entity.setStorageLocation(storageLoc);
+            LocationEntity storageLoc = locationRepositoryPort.findById(request.getStorageLocationId()).orElse(null);
+            if (storageLoc != null) {
+                entity.setStorageLocation(storageLoc);
+            }
         }
 
         if (request.getLotNumber() != null) entity.setLotNumber(request.getLotNumber().trim());
         if (request.getElaborationDate() != null) entity.setElaborationDate(request.getElaborationDate());
         if (request.getExpirationDate() != null) entity.setExpirationDate(request.getExpirationDate());
         if (request.getPiecesPerPallet() != null) entity.setPiecesPerPallet(BigDecimal.valueOf(request.getPiecesPerPallet()));
-        if (request.getPalletType() != null) {
+        if (request.getPalletType() != null && !request.getPalletType().isBlank()) {
+            String cleanType = request.getPalletType().trim().toUpperCase().replace(" ", "_");
             try {
-                entity.setPalletType(PalletType.valueOf(request.getPalletType()));
+                entity.setPalletType(PalletType.valueOf(cleanType));
             } catch (IllegalArgumentException e) {
                 entity.setPalletType(PalletType.MADERA_ESTANDAR);
             }
@@ -457,7 +445,35 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
         reception.setDocNumber(newDoc.trim());
         WarehouseReceptionEntity saved = receptionRepositoryPort.save(reception);
 
-        logAudit(saved.getId(), "REMISION_MODIFICADA",
+        // Actualizar el sapFolio en los inventory_items asociados a las tarimas de esta recepción
+        List<WarehouseReceptionPalletEntity> pallets = palletRepositoryPort.findByReceptionId(reception.getId());
+        for (WarehouseReceptionPalletEntity pallet : pallets) {
+            if (pallet.getInventoryItem() != null) {
+                InventoryItemEntity item = pallet.getInventoryItem();
+                item.setSapFolio(newDoc.trim());
+                inventoryItemRepositoryPort.save(item);
+            } else if (pallet.getPalletCode() != null && !pallet.getPalletCode().isBlank()) {
+                inventoryItemRepositoryPort.findBySscc(pallet.getPalletCode().trim()).ifPresent(item -> {
+                    item.setSapFolio(newDoc.trim());
+                    inventoryItemRepositoryPort.save(item);
+                    pallet.setInventoryItem(item);
+                    palletRepositoryPort.save(pallet);
+                });
+            }
+        }
+
+        // Si existen items con el folio de remisión anterior en la misma sucursal, actualizarlos
+        if (oldDoc != null && !oldDoc.isBlank() && reception.getBranch() != null) {
+            List<InventoryItemEntity> branchItems = inventoryItemRepositoryPort.findByBranchId(reception.getBranch().getId());
+            for (InventoryItemEntity item : branchItems) {
+                if (oldDoc.trim().equalsIgnoreCase(item.getSapFolio())) {
+                    item.setSapFolio(newDoc.trim());
+                    inventoryItemRepositoryPort.save(item);
+                }
+            }
+        }
+
+        logAudit(saved.getId(), "REMISION_MODIFICADA", authorizedUser,
                 Map.of("docNumber", oldDoc != null ? oldDoc : "N/A"),
                 Map.of("docNumber", newDoc,
                        "reason", request.getReason(),
@@ -470,7 +486,15 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
     @Transactional(readOnly = true)
     public List<MovementAuditResponse> getAuditLogs(UUID id) {
         List<AuditLogEntity> logs = auditLogRepositoryPort.findByEntityTypeAndEntityId("RECEPTION", id);
-        return logs.stream().map(this::mapToAuditResponse).collect(Collectors.toList());
+        return logs.stream()
+                .sorted((a, b) -> {
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt()); // Reverse chronological: más reciente arriba
+                })
+                .map(this::mapToAuditResponse)
+                .collect(Collectors.toList());
     }
 
     // ─── PRIVATE HELPERS ─────────────────────────────────────────────────────────
@@ -503,19 +527,25 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
         return userRepositoryPort.findAll().stream()
                 .filter(u -> Boolean.TRUE.equals(u.getIsEnabled()))
                 .findFirst()
-                .orElseGet(() -> UserEntity.builder()
-                        .id(UUID.randomUUID())
-                        .username(username != null && !username.isBlank() ? username : "supervisor")
-                        .firstName("Líder")
-                        .lastName("de Almacén")
-                        .isEnabled(true)
-                        .build());
+                .orElseGet(() -> userRepositoryPort.findAll().stream().findFirst().orElseThrow(
+                        () -> new EntityNotFoundException("No se encontraron usuarios activos en el sistema para registrar la auditoría.")));
     }
 
-    private void logAudit(UUID entityId, String action, Map<String, Object> before, Map<String, Object> after) {
+    private void logAudit(UUID entityId, String action, UserEntity actor, Map<String, Object> before, Map<String, Object> after) {
         try {
-            String username = securityAuditHelper.getCurrentUsername();
-            UserEntity activeUser = userRepositoryPort.findByUsername(username).orElse(null);
+            UserEntity activeUser = actor;
+            if (activeUser == null) {
+                String username = securityAuditHelper.getCurrentUsername();
+                if (username != null && !username.isBlank()) {
+                    activeUser = userRepositoryPort.findByUsername(username).orElse(null);
+                }
+            }
+            if (activeUser == null) {
+                activeUser = userRepositoryPort.findAll().stream()
+                        .filter(u -> Boolean.TRUE.equals(u.getIsEnabled()))
+                        .findFirst()
+                        .orElse(null);
+            }
             if (activeUser != null) {
                 auditService.log(activeUser, action, "RECEPTION", entityId, before, after);
             }
@@ -524,21 +554,25 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
         }
     }
 
+    private void logAudit(UUID entityId, String action, Map<String, Object> before, Map<String, Object> after) {
+        logAudit(entityId, action, null, before, after);
+    }
+
     private MovementAuditResponse mapToAuditResponse(AuditLogEntity log) {
         List<MovementAuditResponse.MovementAuditDetailResponse> details = log.getDetails() != null ?
                 log.getDetails().stream().map(d -> MovementAuditResponse.MovementAuditDetailResponse.builder()
-                        .fieldName(d.getFieldName())
-                        .oldValue(d.getOldValue())
-                        .newValue(d.getNewValue())
+                        .fieldName(translateFieldName(d.getFieldName()))
+                        .oldValue(translateFieldValue(d.getFieldName(), d.getOldValue()))
+                        .newValue(translateFieldValue(d.getFieldName(), d.getNewValue()))
                         .build()).collect(Collectors.toList()) : List.of();
 
         String actionLabel = switch (log.getAction()) {
             case "RECEPCION_CREADA" -> "Pre-Recepción Registrada en Caseta";
-            case "RECEPCION_ACTUALIZADA" -> "Actualización de Datos de Recepción";
-            case "TARIMA_EDITADA" -> "Corrección de Tarima Individual";
-            case "RECEPCION_COMPLETADA" -> "Descarga y Cierre de Recepción F01";
+            case "RECEPCION_ACTUALIZADA" -> "Actualización de Parámetros de Recepción";
+            case "TARIMA_EDITADA" -> "Ajuste de Tarima Individual";
+            case "RECEPCION_COMPLETADA" -> "Descarga Finalizada y Cierre F01";
             case "RECEPCION_CANCELADA" -> "Cancelación Extraordinaria con Autorización";
-            case "REMISION_MODIFICADA" -> "Cambio de Número de Remisión";
+            case "REMISION_MODIFICADA" -> "Modificación de No. de Remisión";
             default -> log.getAction();
         };
 
@@ -560,5 +594,52 @@ public class WarehouseReceptionService implements WarehouseReceptionUseCase {
                 .timestamp(formattedTimestamp)
                 .details(details)
                 .build();
+    }
+
+    private String translateFieldName(String field) {
+        if (field == null || field.isBlank()) return "Dato";
+        return switch (field.trim()) {
+            case "docNumber", "doc_number", "remisionNo", "remision" -> "No. de Remisión / Documento";
+            case "status" -> "Estado Operativo";
+            case "reason", "cancellationReason" -> "Motivo / Justificación";
+            case "authorizedBy", "authorized_by" -> "Autorizado Por (Supervisor)";
+            case "cancelledBy", "cancelled_by" -> "Cancelado Por";
+            case "client", "clientId", "clientName" -> "Cliente / Propietario";
+            case "supplier", "supplierId", "supplierName" -> "Proveedor";
+            case "driver", "driverName" -> "Operador del Transporte";
+            case "plates", "tractorPlates", "boxPlates" -> "Placas (Tractor / Caja)";
+            case "carrier", "carrierId", "carrierName" -> "Línea Transportista";
+            case "storageLocation", "storageLocationId", "locationCode" -> "Bahía Asignada de Almacenaje";
+            case "lotNumber", "lot_number", "lot" -> "Número de Lote";
+            case "piecesPerPallet", "pieces_per_pallet" -> "Piezas por Tarima";
+            case "totalPallets", "pallets" -> "Tarimas Totales (UAs)";
+            case "totalPieces", "pieces" -> "Piezas Totales";
+            case "leader", "leaderAuthorizedBy" -> "Líder de Turno Responsable";
+            case "sku", "skuId", "skuCode" -> "Código SKU / Producto";
+            case "palletType", "pallet_type" -> "Tipo de Tarima";
+            case "observations" -> "Observaciones";
+            case "folio" -> "Folio de Operación";
+            case "elaborationDate" -> "Fecha de Elaboración";
+            case "expirationDate" -> "Fecha de Caducidad";
+            default -> field;
+        };
+    }
+
+    private String translateFieldValue(String field, String value) {
+        if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) return "Sin especificar";
+        String val = value.trim();
+        return switch (val) {
+            case "REGISTERED" -> "En Proceso / Registrado en Caseta";
+            case "COMPLETED" -> "Descarga Finalizada / En Stock";
+            case "CANCELLED" -> "Cancelado";
+            case "DRAFT" -> "Borrador";
+            case "PENDING" -> "Pendiente";
+            case "IN_PROGRESS" -> "En Tránsito / En Curso";
+            case "MADERA_ESTANDAR" -> "Madera Estándar (40x48)";
+            case "PLASTICO" -> "Plástico Higiénico";
+            case "CHEP" -> "Tarima CHEP Azul";
+            case "EURO" -> "Euro-Tarima";
+            default -> val;
+        };
     }
 }

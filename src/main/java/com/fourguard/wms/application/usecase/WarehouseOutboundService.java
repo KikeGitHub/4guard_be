@@ -362,7 +362,15 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
     @Transactional(readOnly = true)
     public List<MovementAuditResponse> getAuditLogs(UUID id) {
         List<AuditLogEntity> logs = auditLogRepositoryPort.findByEntityTypeAndEntityId("OUTBOUND", id);
-        return logs.stream().map(logEntry -> mapToAuditResponse(logEntry)).collect(Collectors.toList());
+        return logs.stream()
+                .sorted((a, b) -> {
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt()); // Reverse chronological
+                })
+                .map(this::mapToAuditResponse)
+                .collect(Collectors.toList());
     }
 
     // ─── PRIVATE HELPERS ─────────────────────────────────────────────────────────
@@ -397,9 +405,9 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
     private MovementAuditResponse mapToAuditResponse(AuditLogEntity log) {
         List<MovementAuditResponse.MovementAuditDetailResponse> details = log.getDetails() != null ?
                 log.getDetails().stream().map(d -> MovementAuditResponse.MovementAuditDetailResponse.builder()
-                        .fieldName(d.getFieldName())
-                        .oldValue(d.getOldValue())
-                        .newValue(d.getNewValue())
+                        .fieldName(translateFieldName(d.getFieldName()))
+                        .oldValue(translateFieldValue(d.getFieldName(), d.getOldValue()))
+                        .newValue(translateFieldValue(d.getFieldName(), d.getNewValue()))
                         .build()).collect(Collectors.toList()) : List.of();
 
         String actionLabel = switch (log.getAction()) {
@@ -426,5 +434,35 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
                 .timestamp(formattedTimestamp)
                 .details(details)
                 .build();
+    }
+
+    private String translateFieldName(String field) {
+        if (field == null || field.isBlank()) return "Dato";
+        return switch (field.trim()) {
+            case "client", "clientId", "clientName" -> "Cliente / Destinatario";
+            case "carrier", "carrierId", "carrierName" -> "Línea Transportista";
+            case "driver", "driverName" -> "Operador del Transporte";
+            case "plates", "tractorPlates", "boxPlates" -> "Placas (Tractor / Caja)";
+            case "status" -> "Estado Operativo";
+            case "reason", "cancellationReason" -> "Motivo / Justificación";
+            case "authorizedBy", "authorized_by" -> "Autorizado Por (Supervisor)";
+            case "cancelledBy", "cancelled_by" -> "Cancelado Por";
+            case "totalPallets", "pallets" -> "Tarimas Totales Despachadas";
+            case "totalPieces", "pieces" -> "Piezas Totales Despachadas";
+            case "folio" -> "Folio de Operación";
+            case "sealNumber" -> "Número de Sello / Marchamo";
+            default -> field;
+        };
+    }
+
+    private String translateFieldValue(String field, String value) {
+        if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) return "Sin especificar";
+        String val = value.trim();
+        return switch (val) {
+            case "COMPLETED", "DISPATCHED" -> "Despachado / Salida Confirmada";
+            case "CANCELLED" -> "Cancelado";
+            case "PENDING" -> "Pendiente de Carga";
+            default -> val;
+        };
     }
 }
