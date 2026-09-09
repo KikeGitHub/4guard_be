@@ -18,15 +18,15 @@ public class ProductSkuPersistenceAdapter implements ProductSkuRepositoryPort {
     private final ProductSkuJpaRepository repository;
 
     @Override
-    @Cacheable(value = "catalogues", key = "'sku-' + #id", unless = "#result == null || !#result.isPresent()")
+    @Cacheable(value = "catalogues", key = "'sku-' + #id", unless = "#result == null")
     public Optional<ProductSkuEntity> findById(UUID id)                              { return repository.findById(id); }
 
     @Override
-    @Cacheable(value = "catalogues", key = "'sku-client-code-' + #cid + '-' + #code", unless = "#result == null || !#result.isPresent()")
+    @Cacheable(value = "catalogues", key = "'sku-client-code-' + #cid + '-' + #code", unless = "#result == null")
     public Optional<ProductSkuEntity> findByClientIdAndCode(UUID cid, String code)   { return repository.findByClientIdAndCode(cid, code); }
 
     @Override
-    @Cacheable(value = "catalogues", key = "'sku-code-' + #code", unless = "#result == null || !#result.isPresent()")
+    @Cacheable(value = "catalogues", key = "'sku-code-' + #code", unless = "#result == null")
     public Optional<ProductSkuEntity> findFirstByCode(String code)                   { return repository.findFirstByCode(code); }
 
     @Override
