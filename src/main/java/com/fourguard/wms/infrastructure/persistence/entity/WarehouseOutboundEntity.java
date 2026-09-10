@@ -67,6 +67,10 @@ public class WarehouseOutboundEntity extends BaseVersionedEntity {
 
     // ── Transporte y Chofer ─────────────────────────────────────────────────
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "forklift_operator_id")
+    private ForkliftOperatorEntity forkliftOperator;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "carrier_id")
     private CarrierEntity carrier;
 
