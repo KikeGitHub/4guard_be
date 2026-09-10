@@ -56,8 +56,10 @@ public class CarrierService implements CarrierUseCase {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Organización no encontrada con ID: " + request.getOrganizationId()));
 
-        // 1. Validar unicidad de RFC (tax_id) obligatoriamente
-        validateTaxId(request.getTaxId(), request.getOrganizationId(), null);
+        // 1. Validar unicidad de RFC (tax_id) si se proporciona
+        if (request.getTaxId() != null && !request.getTaxId().isBlank()) {
+            validateTaxId(request.getTaxId(), request.getOrganizationId(), null);
+        }
 
         // 2. Validar unicidad de nombre en la misma organización
         List<CarrierEntity> existingCarriers = carrierRepositoryPort.findByOrganizationId(request.getOrganizationId());
