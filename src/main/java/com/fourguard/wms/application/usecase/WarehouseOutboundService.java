@@ -45,6 +45,7 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
     private final ClientRepositoryPort clientRepositoryPort;
     private final ClientDestinationRepositoryPort clientDestinationRepositoryPort;
     private final CarrierRepositoryPort carrierRepositoryPort;
+    private final ForkliftOperatorRepositoryPort forkliftOperatorRepositoryPort;
     private final InventoryItemRepositoryPort inventoryItemRepositoryPort;
     private final InventoryItemJpaRepository inventoryItemJpaRepository;
     private final InventoryMovementRepositoryPort inventoryMovementRepositoryPort;
@@ -77,6 +78,18 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
         CarrierEntity carrier = null;
         if (request.getCarrierId() != null) {
             carrier = carrierRepositoryPort.findById(request.getCarrierId()).orElse(null);
+        }
+
+        ForkliftOperatorEntity operator = null;
+        if (request.getForkliftOperatorId() != null) {
+            operator = forkliftOperatorRepositoryPort.findById(request.getForkliftOperatorId()).orElse(null);
+        }
+        if (operator == null && request.getForkliftOperatorName() != null && !request.getForkliftOperatorName().isBlank()) {
+            String opName = request.getForkliftOperatorName().trim().toLowerCase();
+            operator = forkliftOperatorRepositoryPort.findAll().stream()
+                    .filter(o -> o.getFullName() != null && o.getFullName().toLowerCase().contains(opName))
+                    .findFirst()
+                    .orElse(null);
         }
 
         // Generate consecutive folio: SAL-YYYY-XXXXXX
@@ -123,6 +136,7 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
                 .destinationName(destName)
                 .destinationAddress(destAddress)
                 .carrier(carrier)
+                .forkliftOperator(operator)
                 .transportType(request.getTransportType() != null ? request.getTransportType().toUpperCase().trim() : "TRAILER")
                 .driverName(request.getDriverName())
                 .economicNumber(request.getEconomicNumber())
@@ -135,11 +149,18 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
                 .distinctSkus(distinctSkuIds.size())
                 .build();
 
+        String currentUsername = "admin";
         UserEntity activeUser = null;
         try {
-            String currentUsername = securityAuditHelper.getCurrentUsername();
+            String loggedUser = securityAuditHelper.getCurrentUsername();
+            if (loggedUser != null && !loggedUser.isBlank()) {
+                currentUsername = loggedUser;
+            }
             activeUser = userRepositoryPort.findByUsername(currentUsername).orElse(null);
         } catch (Exception ignored) {}
+
+        outbound.setCreatedBy(currentUsername);
+        outbound.setUpdatedBy(currentUsername);
 
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         List<WarehouseOutboundItemEntity> outboundItems = new ArrayList<>();
@@ -184,6 +205,7 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
                        "client", client.getName(),
                        "destination", destName != null ? destName : "N/A",
                        "carrier", carrier != null ? carrier.getName() : "N/A",
+                       "forkliftOperator", operator != null ? operator.getFullName() : (request.getForkliftOperatorName() != null ? request.getForkliftOperatorName() : "N/A"),
                        "sealNumber", request.getSealNumber(),
                        "totalPallets", String.valueOf(itemsToDispatch.size()),
                        "totalPieces", String.valueOf(totalPieces)));
@@ -441,6 +463,7 @@ public class WarehouseOutboundService implements WarehouseOutboundUseCase {
         return switch (field.trim()) {
             case "client", "clientId", "clientName" -> "Cliente / Destinatario";
             case "carrier", "carrierId", "carrierName" -> "Línea Transportista";
+            case "forkliftOperator", "forklift_operator", "operator" -> "Operador de Montacargas";
             case "driver", "driverName" -> "Operador del Transporte";
             case "plates", "tractorPlates", "boxPlates" -> "Placas (Tractor / Caja)";
             case "status" -> "Estado Operativo";

@@ -30,6 +30,9 @@ public class CreateOutboundRequest {
     private UUID carrierId;
     private String carrierName;
 
+    private UUID forkliftOperatorId;
+    private String forkliftOperatorName;
+
     @NotBlank(message = "transportType es obligatorio (CAMION, TORTON, TRAILER)")
     private String transportType;
 
