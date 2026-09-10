@@ -84,6 +84,9 @@ public class WarehouseOutboundEntity extends BaseVersionedEntity {
     @Column(name = "economic_number", length = 30)
     private String economicNumber;
 
+    @Column(name = "box_economic_number", length = 30)
+    private String boxEconomicNumber;
+
     @Column(name = "tractor_plates", nullable = false, length = 20)
     private String tractorPlates;
 

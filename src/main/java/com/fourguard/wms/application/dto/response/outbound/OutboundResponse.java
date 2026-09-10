@@ -38,6 +38,7 @@ public class OutboundResponse {
     private String transportType;
     private String driverName;
     private String economicNumber;
+    private String boxEconomicNumber;
     private String tractorPlates;
     private String boxPlates;
     private String sealNumber;
